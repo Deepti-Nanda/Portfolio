@@ -78,85 +78,153 @@ const experiences: ExperienceItem[] = [
 ];
 
 const typeStyles = {
-  work: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", iconBg: "bg-blue-500/20" },
-  project: { color: "text-green-400", bg: "bg-green-500/10", border: "border-green-500/20", iconBg: "bg-green-500/20" },
-  education: { color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20", iconBg: "bg-purple-500/20" },
-  achievement: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", iconBg: "bg-amber-500/20" },
+  work: {
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
+    iconBg: "bg-blue-500/20",
+  },
+  project: {
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+    border: "border-green-500/20",
+    iconBg: "bg-green-500/20",
+  },
+  education: {
+    color: "text-purple-400",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20",
+    iconBg: "bg-purple-500/20",
+  },
+  achievement: {
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    iconBg: "bg-amber-500/20",
+  },
 };
 
 export function Experience() {
   const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    const elements = document.querySelectorAll("[data-experience-item]");
+
+    if (!("IntersectionObserver" in window)) {
+      setVisibleItems(new Set(experiences.map((exp) => exp.id)));
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setVisibleItems((prev) => new Set([...prev, entry.target.id]));
+            setVisibleItems((prev) => {
+              if (prev.has(entry.target.id)) return prev;
+              return new Set([...prev, entry.target.id]);
+            });
+
+            observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -40px 0px",
+      },
     );
 
-    const elements = document.querySelectorAll("[data-experience-item]");
     elements.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
   }, []);
 
   return (
-    <section id="experience" className="reveal" aria-labelledby="experience-heading">
-      <div className="container">
-        <h2 id="experience-heading" className="section-title text-[var(--foreground)]">
+    <section
+      id="experience"
+      className="reveal py-16 sm:py-20 lg:py-28"
+      aria-labelledby="experience-heading"
+    >
+      <div className="container px-4 sm:px-6">
+        <h2
+          id="experience-heading"
+          className="section-title text-[var(--foreground)]"
+        >
           Experience
         </h2>
-        <p className="text-[var(--muted)] text-center max-w-2xl mx-auto mb-12">
-          My journey through education, open source, and professional development.
+
+        <p className="text-[var(--muted)] text-center max-w-2xl mx-auto mb-8 sm:mb-12 text-sm sm:text-base leading-relaxed">
+          My journey through education, open source, and professional
+          development.
         </p>
 
-        <div className="timeline">
+        <div className="timeline min-w-0">
           {experiences.map((exp, index) => (
             <div
               key={exp.id}
               id={exp.id}
               data-experience-item
-              className={`timeline-item transition-all duration-700 ${
+              className={`timeline-item min-w-0 transition-all duration-700 ${
                 visibleItems.has(exp.id) ? "visible" : ""
               }`}
-              style={{ transitionDelay: `${index * 100}ms` }}
+              style={{
+                transitionDelay: `${index * 100}ms`,
+              }}
             >
-              <div className="timeline-marker" style={{ backgroundColor: "var(--background)" }} />
+              <div
+                className="timeline-marker"
+                style={{ backgroundColor: "var(--background)" }}
+                aria-hidden="true"
+              />
 
-              <div className="timeline-content group">
-                <div className="flex items-start gap-4">
+              <div className="timeline-content group min-w-0">
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   <div
-                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${typeStyles[exp.type].iconBg} ${typeStyles[exp.type].color}`}
+                    className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${typeStyles[exp.type].iconBg} ${typeStyles[exp.type].color}`}
+                    aria-hidden="true"
                   >
                     {exp.icon}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-[var(--foreground)]">{exp.role}</h3>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${typeStyles[exp.type].bg} ${typeStyles[exp.type].color} ${typeStyles[exp.type].border}`}>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-[var(--foreground)] leading-snug break-words">
+                        {exp.role}
+                      </h3>
+
+                      <span
+                        className={`inline-flex items-center text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ${typeStyles[exp.type].bg} ${typeStyles[exp.type].color} ${typeStyles[exp.type].border}`}
+                      >
                         {exp.type.charAt(0).toUpperCase() + exp.type.slice(1)}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--muted)] mb-4">
-                      <span className="font-medium text-[var(--foreground)]">{exp.company}</span>
-                      <span>·</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs sm:text-sm text-[var(--muted)] mb-3 sm:mb-4">
+                      <span className="font-medium text-[var(--foreground)]">
+                        {exp.company}
+                      </span>
+
+                      <span aria-hidden="true">·</span>
+
                       <span>{exp.period}</span>
-                      <span>·</span>
+
+                      <span aria-hidden="true">·</span>
+
                       <span>{exp.location}</span>
                     </div>
 
-                    <ul className="space-y-2 text-[var(--muted)] text-sm leading-relaxed">
+                    <ul className="space-y-2 text-[var(--muted)] text-xs sm:text-sm leading-relaxed">
                       {exp.description.map((desc, i) => (
-                        <li key={i} className="flex items-start gap-2 group-hover:text-[var(--foreground)] transition-colors">
-                          <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2 bg-[var(--accent)]" />
-                          <span>{desc}</span>
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 group-hover:text-[var(--foreground)] transition-colors"
+                        >
+                          <span
+                            className="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-[6px] sm:mt-2 bg-[var(--accent)]"
+                            aria-hidden="true"
+                          />
+
+                          <span className="min-w-0 break-words">{desc}</span>
                         </li>
                       ))}
                     </ul>
