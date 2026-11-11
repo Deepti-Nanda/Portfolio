@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -43,7 +42,7 @@ export function Contact() {
   }, []);
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -79,14 +78,12 @@ export function Contact() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Unable to send your message."
-        );
+        throw new Error(result.message || "Unable to send your message.");
       }
 
       setStatus("success");
       setStatusMessage(
-        "Your message has been submitted successfully. Thank you for reaching out!"
+        "Your message has been submitted successfully. Thank you for reaching out!",
       );
       setFormData(INITIAL_FORM);
     } catch (error) {
@@ -94,7 +91,7 @@ export function Contact() {
       setStatusMessage(
         error instanceof Error
           ? error.message
-          : "Something went wrong. Please try again."
+          : "Something went wrong. Please try again.",
       );
     }
   };
@@ -116,7 +113,7 @@ export function Contact() {
     } catch {
       setCopied(false);
       setCopyError(
-        "Unable to copy automatically. Please select the email address."
+        "Unable to copy automatically. Please select the email address.",
       );
     }
   };
@@ -152,11 +149,11 @@ export function Contact() {
   return (
     <section
       id="contact"
-      className="reveal"
+      className="reveal py-16 sm:py-20 lg:py-28"
       aria-labelledby="contact-heading"
     >
-      <div className="container">
-        <div className="max-w-3xl mx-auto text-center mb-16">
+      <div className="container px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-12 lg:mb-16">
           <h2
             id="contact-heading"
             className="section-title text-[var(--foreground)]"
@@ -164,52 +161,51 @@ export function Contact() {
             Let's Talk
           </h2>
 
-          <p className="text-[var(--muted)] mt-4 text-lg">
-            Have a project in mind or just want to say hi? I'd love to hear from you.
+          <p className="text-[var(--muted)] mt-3 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed">
+            Have a project in mind or just want to say hi? I'd love to hear from
+            you.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10 max-w-4xl mx-auto min-w-0">
           {/* Contact Information */}
-          <div className="space-y-8">
-            <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-8">
-              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-6">
+          <div className="space-y-5 sm:space-y-6 lg:space-y-8 min-w-0">
+            <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 sm:p-6 lg:p-8 min-w-0">
+              <h3 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-4 sm:mb-6">
                 Get in Touch
               </h3>
 
-              <div className="space-y-6">
+              <div className="space-y-3 sm:space-y-4">
                 {socialLinks.map((social) => (
                   <div
                     key={social.name}
-                    className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-[var(--card-border)] group"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl transition-all hover:bg-[var(--card-border)] group min-w-0"
                   >
                     <a
                       href={social.href}
                       target={
-                        social.href.startsWith("http")
-                          ? "_blank"
-                          : undefined
+                        social.href.startsWith("http") ? "_blank" : undefined
                       }
                       rel={
                         social.href.startsWith("http")
                           ? "noopener noreferrer"
                           : undefined
                       }
-                      className="flex flex-1 min-w-0 items-center gap-4"
+                      className="flex flex-1 min-w-0 items-center gap-3 sm:gap-4"
                     >
-                      <div className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-[var(--accent)] bg-[var(--accent)]/10">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-lg flex items-center justify-center text-[var(--accent)] bg-[var(--accent)]/10">
                         <social.icon
-                          className="w-6 h-6"
+                          className="w-5 h-5 sm:w-6 sm:h-6"
                           aria-hidden="true"
                         />
                       </div>
 
                       <div className="min-w-0 flex-1 text-left">
-                        <p className="text-sm text-[var(--muted)]">
+                        <p className="text-xs sm:text-sm text-[var(--muted)]">
                           {social.name}
                         </p>
 
-                        <p className="text-[var(--foreground)] font-medium group-hover:text-[var(--accent)] transition-colors break-all">
+                        <p className="text-sm sm:text-base text-[var(--foreground)] font-medium group-hover:text-[var(--accent)] transition-colors break-all">
                           {social.label}
                         </p>
                       </div>
@@ -219,7 +215,7 @@ export function Contact() {
                       <button
                         type="button"
                         onClick={copyEmail}
-                        className="btn-ghost shrink-0 p-2 transition-colors"
+                        className="btn-ghost shrink-0 min-w-10 min-h-10 sm:min-w-11 sm:min-h-11 p-2 transition-colors"
                         aria-label="Copy email address"
                         title="Copy email address"
                       >
@@ -234,40 +230,38 @@ export function Contact() {
                 ))}
 
                 <p
-                  className="text-xs text-[var(--muted)]"
+                  className="text-xs text-[var(--muted)] min-h-4 px-2"
                   aria-live="polite"
                 >
-                  {copied
-                    ? "Email address copied!"
-                    : copyError}
+                  {copied ? "Email address copied!" : copyError}
                 </p>
               </div>
             </div>
 
             {/* Availability */}
-            <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-8">
-              <h3 className="text-xl font-semibold text-[var(--foreground)] mb-4">
+            <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 sm:p-6 lg:p-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-4">
                 Availability
               </h3>
 
-              <div className="space-y-3 text-[var(--muted)]">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <div className="space-y-3 text-sm sm:text-base text-[var(--muted)]">
+                <div className="flex items-start gap-3">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-green-500 animate-pulse" />
                   <span>Open to internships (part-time & full-time)</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div className="flex items-start gap-3">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-green-500 animate-pulse" />
                   <span>Available for freelance projects</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <div className="flex items-start gap-3">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-green-500 animate-pulse" />
                   <span>Open to collaboration & open source</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                <div className="flex items-start gap-3">
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-blue-500" />
                   <span>Typically responds within 24 hours</span>
                 </div>
               </div>
@@ -275,23 +269,18 @@ export function Contact() {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-8">
-            <h3 className="text-xl font-semibold text-[var(--foreground)] mb-6">
+          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl p-4 sm:p-6 lg:p-8 min-w-0">
+            <h3 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-5 sm:mb-6">
               Send a Message
             </h3>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-5"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               {/* Honeypot field for basic bot filtering */}
               <div
                 className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden"
                 aria-hidden="true"
               >
-                <label htmlFor="website">
-                  Leave this field empty
-                </label>
+                <label htmlFor="website">Leave this field empty</label>
                 <input
                   type="text"
                   id="website"
@@ -301,8 +290,8 @@ export function Contact() {
                 />
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-5">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                <div className="min-w-0">
                   <label
                     htmlFor="name"
                     className="block text-sm font-medium text-[var(--foreground)] mb-2"
@@ -320,13 +309,13 @@ export function Contact() {
                     minLength={2}
                     maxLength={80}
                     autoComplete="name"
-                    className="form-input"
+                    className="form-input min-h-11 w-full"
                     placeholder="Your name"
                     disabled={status === "submitting"}
                   />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <label
                     htmlFor="email"
                     className="block text-sm font-medium text-[var(--foreground)] mb-2"
@@ -343,7 +332,7 @@ export function Contact() {
                     required
                     maxLength={254}
                     autoComplete="email"
-                    className="form-input"
+                    className="form-input min-h-11 w-full"
                     placeholder="your@email.com"
                     disabled={status === "submitting"}
                   />
@@ -367,7 +356,7 @@ export function Contact() {
                   required
                   minLength={2}
                   maxLength={120}
-                  className="form-input"
+                  className="form-input min-h-11 w-full"
                   placeholder="What's this about?"
                   disabled={status === "submitting"}
                 />
@@ -390,7 +379,7 @@ export function Contact() {
                   minLength={10}
                   maxLength={5000}
                   rows={5}
-                  className="form-input resize-y min-h-[120px]"
+                  className="form-input resize-y min-h-[120px] w-full"
                   placeholder="Tell me about your project, opportunity, or just say hello..."
                   disabled={status === "submitting"}
                 />
@@ -398,7 +387,7 @@ export function Contact() {
 
               <button
                 type="submit"
-                className="btn-primary w-full flex items-center justify-center gap-3 py-4"
+                className="btn-primary w-full min-h-12 flex items-center justify-center gap-3 py-3 sm:py-4"
                 disabled={status === "submitting"}
               >
                 {status === "submitting" ? (
@@ -423,18 +412,17 @@ export function Contact() {
                 <p
                   role={status === "error" ? "alert" : "status"}
                   aria-live="polite"
-                  className={`text-sm text-center ${
-                    status === "error"
-                      ? "text-red-500"
-                      : "text-green-500"
+                  className={`text-sm text-center leading-relaxed ${
+                    status === "error" ? "text-red-500" : "text-green-500"
                   }`}
                 >
                   {statusMessage}
                 </p>
               )}
 
-              <p className="text-xs text-[var(--muted)] text-center">
-                By submitting, you agree to share your email for correspondence purposes only.
+              <p className="text-xs text-[var(--muted)] text-center leading-relaxed">
+                By submitting, you agree to share your email for correspondence
+                purposes only.
               </p>
             </form>
           </div>
