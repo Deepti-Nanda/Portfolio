@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card-bg: #fafafa;
-  --card-border: #e5e5e5;
-  --muted: #737373;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --background: #E7E9DF;
+  --foreground: #203128;
+  --card-bg: #DCE2D5;
+  --card-border: #BCC9B9;
+  --muted: #59695B;
+  --accent: #2d703c;
+  --accent-hover: #24a344;
+  --accent-foreground: #FFFFFF;
+
+  --ambient-gradient:
+    radial-gradient(ellipse at 15% 20%, rgba(63, 112, 60, 0.15), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(125, 159, 81, 0.13), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.12), transparent 50%),
+    linear-gradient(135deg, #E7E9DF, #DCE2D5, #E7E9DF);
 }
 
 @theme inline {
@@ -17,40 +24,44 @@
   --color-card-border: var(--card-border);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --card-bg: #171717;
-    --card-border: #262626;
-    --muted: #a3a3a3;
-    --accent: #3b82f6;
-    --accent-hover: #60a5fa;
-  }
-}
-
 [data-theme="light"] {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card-bg: #fafafa;
-  --card-border: #e5e5e5;
-  --muted: #737373;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --background: #E7E9DF;
+  --foreground: #203128;
+  --card-bg: #DCE2D5;
+  --card-border: #BCC9B9;
+  --muted: #59695B;
+  --accent: #2d703c;
+  --accent-hover: #24a344;
+  --accent-foreground: #FFFFFF;
+
+  --ambient-gradient:
+    radial-gradient(ellipse at 15% 20%, rgba(63, 112, 60, 0.15), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(125, 159, 81, 0.13), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.12), transparent 50%),
+    linear-gradient(135deg, #E7E9DF, #DCE2D5, #E7E9DF);
 }
 
 [data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card-bg: #171717;
-  --card-border: #262626;
-  --muted: #a3a3a3;
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
+  --background: #243329;
+  --foreground: #E8EDE4;
+  --card-bg: #243329;
+  --card-border: #374c3a;
+  --muted: #AAB7A7;
+  --accent: #7d9f51;
+  --accent-hover: #3f5c19;
+  --accent-foreground: #0a130e;
+
+  --ambient-gradient:
+    radial-gradient(ellipse at 15% 20%, rgba(125, 159, 81, 0.18), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(63, 92, 25, 0.18), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.16), transparent 50%),
+    linear-gradient(135deg, #243329, #1D2B22, #243329);
 }
 
 /* Global reset */
@@ -64,19 +75,49 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
   overflow-x: clip;
+  background: var(--background);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: clip;
+  isolation: isolate;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* Animated ambient background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--ambient-gradient);
+  background-size: 200% 200%;
+  animation: ambient-gradient-shift 24s ease-in-out infinite alternate;
+  will-change: background-position;
+}
+
+@keyframes ambient-gradient-shift {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+/* Media defaults */
 img,
 video,
 canvas,
@@ -111,7 +152,7 @@ video {
 /* Selection */
 ::selection {
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
 }
 
 /* Focus visible */
@@ -137,7 +178,7 @@ video {
 
   0%,
   100% {
-    transform: translateY(0px);
+    transform: translateY(0);
   }
 
   50% {
@@ -149,11 +190,11 @@ video {
 
   0%,
   100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   50% {
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 55%, transparent);
   }
 }
 
@@ -185,97 +226,28 @@ video {
 a,
 button,
 .transition-smooth {
-  transition: all 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 /* Glass morphism */
 .glass {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--card-bg) 78%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid color-mix(in srgb, var(--card-border) 75%, transparent);
 }
 
 /* Modal overlay */
 .modal-overlay {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-[data-theme="light"] .modal-overlay {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-/* Starfield for dark sections */
-.starfield {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.starfield::before,
-.starfield::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(1px 1px at 20px 30px, #fff, transparent),
-    radial-gradient(1px 1px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(1px 1px at 160px 30px, rgba(255, 255, 255, 0.5), transparent);
-  background-repeat: repeat;
-  background-size: 200px 100px;
-  animation: starfield-move 60s linear infinite;
-}
-
-.starfield::after {
-  background-image:
-    radial-gradient(2px 2px at 10px 10px, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 60px 60px, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 110px 20px, rgba(255, 255, 255, 0.7), transparent);
-  background-size: 300px 150px;
-  animation-duration: 90s;
-  animation-direction: reverse;
-}
-
-@keyframes starfield-move {
-  from {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(-1000px);
-  }
-}
-
-/* Shooting stars */
-@keyframes shooting-star {
-  0% {
-    transform: translateX(0) translateY(0) rotate(45deg);
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateX(300px) translateY(-300px) rotate(45deg);
-    opacity: 0;
-  }
-}
-
-.shooting-star {
-  position: absolute;
-  width: 2px;
-  height: 60px;
-  background: linear-gradient(180deg, transparent, #fff);
-  border-radius: 2px;
-  animation: shooting-star 3s ease-out infinite;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 /* Skill chips */
@@ -309,7 +281,7 @@ button,
 .btn-primary {
   @apply px-6 py-3 text-sm font-semibold rounded-lg transition-colors;
   background: var(--accent);
-  color: white;
+  color: var(--accent-foreground);
 }
 
 .btn-primary:hover {
