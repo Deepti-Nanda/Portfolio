@@ -67,9 +67,13 @@ export function About() {
   };
 
   return (
-    <section id="about" className="reveal" aria-labelledby="about-heading">
+    <section
+      id="about"
+      className="reveal py-16 sm:py-20 lg:py-24"
+      aria-labelledby="about-heading"
+    >
       <div className="container">
-        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-16">
+        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-20">
           {/* Left side - Text */}
           <div className="min-w-0 lg:pr-8">
             <h2
@@ -79,22 +83,21 @@ export function About() {
               About Me
             </h2>
 
-            <div className="max-w-none text-[var(--foreground)]">
-              <p className="mb-5 text-sm leading-relaxed text-[var(--muted)] sm:mb-6 sm:text-base lg:text-lg">
+            <div className="mt-6 max-w-none text-[var(--foreground)]">
+              <p className="mb-6 text-sm leading-[1.9] text-[var(--muted)] sm:mb-7 sm:text-base lg:text-lg">
                 I build technology that solves real-world problems. I'm a BCA
-                undergraduate at Sarala Birla University (Class of 2027),
-                focused on full-stack development and AI-driven applications.
+                undergraduate at Sarala Birla University, focused on full-stack
+                development and AI-driven applications.
               </p>
 
-              <p className="mb-5 text-sm leading-relaxed text-[var(--muted)] sm:mb-6 sm:text-base lg:text-lg">
+              <p className="mb-6 text-sm leading-[1.9] text-[var(--muted)] sm:mb-7 sm:text-base lg:text-lg">
                 My journey in tech started with curiosity about how things work
-                behind the screen. Today, I craft scalable web applications,
-                experiment with machine learning models, and contribute to
-                open-source projects. I believe the best code is written with
-                empathy for the end user.
+                behind the screen. Today, I craft scalable web applications, and
+                contribute to open-source projects. I believe the best code is
+                written with empathy for the end user.
               </p>
 
-              <p className="text-sm leading-relaxed text-[var(--muted)] sm:text-base lg:text-lg">
+              <p className="text-sm leading-[1.9] text-[var(--muted)] sm:text-base lg:text-lg">
                 When I'm not coding, you'll find me solving algorithmic
                 challenges on LeetCode, exploring new frameworks, or sharing
                 knowledge with the developer community.
@@ -103,16 +106,15 @@ export function About() {
 
             {/* Quick facts */}
             <div
-              className="mt-7 flex flex-wrap gap-2 sm:mt-10 sm:gap-3"
+              className="mt-9 flex flex-wrap gap-2 sm:mt-12 sm:gap-3"
               aria-label="Quick facts"
             >
               {[
-                "BCA 2024-2027",
+                "BCA Undergraduate",
                 "Sarala Birla University",
                 "Ranchi, India",
                 "Full-Stack Developer",
-                "AI Enthusiast",
-                "Open Source",
+                "Open-Source Contributor",
               ].map((fact) => (
                 <div key={fact} className="skill-chip">
                   <span>{fact}</span>
@@ -122,7 +124,7 @@ export function About() {
           </div>
 
           {/* Right side - Video Player */}
-          <div className="relative min-w-0 w-full">
+          <div className="relative min-w-0 w-full lg:translate-y-16">
             <div
               ref={videoWrapperRef}
               className="video-wrapper group"
@@ -283,7 +285,7 @@ export function About() {
             </div>
 
             <p className="mt-3 text-center text-xs text-[var(--muted)] sm:mt-4 sm:text-sm">
-              Click to play / pause · 40 second introduction
+              Click to play / pause
             </p>
           </div>
         </div>
