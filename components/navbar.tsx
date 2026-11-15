@@ -34,17 +34,11 @@ export function Navbar() {
   const resumeBtnRef = useRef<HTMLButtonElement>(null);
   const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Close dropdown when clicking outside.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        resumeBtnRef.current &&
-        !resumeBtnRef.current.contains(target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setResumeDropdownOpen(false);
       }
     };
@@ -56,19 +50,18 @@ export function Navbar() {
     };
   }, []);
 
-  // Close menus when pressing Escape.
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (resumeDropdownOpen) {
-          setResumeDropdownOpen(false);
-          resumeBtnRef.current?.focus();
-        }
+      if (event.key !== "Escape") return;
 
-        if (mobileMenuOpen) {
-          setMobileMenuOpen(false);
-          mobileMenuBtnRef.current?.focus();
-        }
+      if (resumeDropdownOpen) {
+        setResumeDropdownOpen(false);
+        resumeBtnRef.current?.focus();
+      }
+
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        mobileMenuBtnRef.current?.focus();
       }
     };
 
@@ -79,12 +72,11 @@ export function Navbar() {
     };
   }, [resumeDropdownOpen, mobileMenuOpen]);
 
-  // Close mobile menu after selecting a navigation link.
   const handleLinkClick = () => {
     setMobileMenuOpen(false);
+    setResumeDropdownOpen(false);
   };
 
-  // Cycle through available themes.
   const handleThemeToggle = () => {
     const themes: Array<"light" | "dark" | "system"> = [
       "light",
@@ -137,7 +129,7 @@ export function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg sm:text-xl font-bold tracking-tight text-[var(--foreground)]"
+          className="flex items-center gap-2 text-lg sm:text-xl font-bold tracking-tight text-[var(--foreground)] transition-colors hover:text-[var(--accent)] focus-visible:outline-offset-4"
           aria-label="Deepti Nanda - Home"
           onClick={handleLinkClick}
         >
@@ -150,7 +142,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="relative text-sm font-medium text-[var(--muted)] hover:text-[var(--foreground)] transition-colors after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-0 after:bg-[var(--accent)] after:transition-all hover:after:w-full"
+              className="relative text-sm font-medium text-[var(--muted)] hover:text-[var(--accent)] transition-colors after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:w-0 after:bg-[var(--accent)] after:transition-all hover:after:w-full"
             >
               {link.label}
             </Link>
@@ -160,7 +152,7 @@ export function Navbar() {
           <div className="relative" ref={dropdownRef}>
             <button
               ref={resumeBtnRef}
-              onClick={() => setResumeDropdownOpen(!resumeDropdownOpen)}
+              onClick={() => setResumeDropdownOpen((prev) => !prev)}
               className="btn-secondary flex items-center gap-2 py-2 px-3 text-xs md:text-sm"
               aria-expanded={resumeDropdownOpen}
               aria-haspopup="true"
@@ -179,12 +171,11 @@ export function Navbar() {
             {resumeDropdownOpen && (
               <div
                 id="resume-dropdown"
-                ref={dropdownRef}
-                className="absolute right-0 top-full mt-2 w-48 glass rounded-xl border border-[var(--card-border)] py-2 shadow-lg animate-fade-in-up bg-[var(--card-bg)]"
+                className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-[var(--card-border)] py-2 shadow-lg animate-fade-in-up bg-[var(--card-bg)]"
               >
                 <button
                   onClick={handleResumeView}
-                  className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm text-left text-[var(--foreground)] hover:bg-[var(--card-border)] transition-colors"
+                  className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm text-left text-[var(--foreground)] hover:bg-[var(--background)] hover:text-[var(--accent)] transition-colors"
                 >
                   <FileText className="w-4 h-4 text-[var(--accent)]" />
                   View Resume
@@ -192,7 +183,7 @@ export function Navbar() {
 
                 <button
                   onClick={handleResumeDownload}
-                  className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm text-left text-[var(--foreground)] hover:bg-[var(--card-border)] transition-colors"
+                  className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm text-left text-[var(--foreground)] hover:bg-[var(--background)] hover:text-[var(--accent)] transition-colors"
                 >
                   <Download className="w-4 h-4 text-[var(--accent)]" />
                   Download Resume
@@ -215,7 +206,7 @@ export function Navbar() {
         {/* Mobile Menu Button */}
         <button
           ref={mobileMenuBtnRef}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
           className="md:hidden btn-ghost p-2 rounded-xl min-w-11 min-h-11 flex items-center justify-center"
           aria-expanded={mobileMenuOpen}
           aria-controls="mobile-menu"
@@ -251,7 +242,7 @@ export function Navbar() {
             <div className="pt-4 border-t border-[var(--card-border)] space-y-3">
               <button
                 onClick={handleResumeView}
-                className="w-full min-h-11 flex items-center gap-3 px-4 py-3 text-left text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg bg-[var(--background)]"
+                className="w-full min-h-11 flex items-center gap-3 px-4 py-3 text-left text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg border border-[var(--card-border)] bg-[var(--background)]"
               >
                 <FileText className="w-5 h-5 text-[var(--accent)]" />
                 View Resume
@@ -259,7 +250,7 @@ export function Navbar() {
 
               <button
                 onClick={handleResumeDownload}
-                className="w-full min-h-11 flex items-center gap-3 px-4 py-3 text-left text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg bg-[var(--background)]"
+                className="w-full min-h-11 flex items-center gap-3 px-4 py-3 text-left text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg border border-[var(--card-border)] bg-[var(--background)]"
               >
                 <Download className="w-5 h-5 text-[var(--accent)]" />
                 Download Resume
@@ -269,7 +260,7 @@ export function Navbar() {
             {/* Theme Toggle */}
             <button
               onClick={handleThemeToggle}
-              className="w-full min-h-11 flex items-center justify-between px-4 py-3 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg bg-[var(--background)]"
+              className="w-full min-h-11 flex items-center justify-between px-4 py-3 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg border border-[var(--card-border)] bg-[var(--background)]"
               aria-label={`Change theme (current: ${getThemeLabel()})`}
             >
               <span className="flex items-center gap-3">
