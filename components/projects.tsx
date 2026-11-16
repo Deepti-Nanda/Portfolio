@@ -16,28 +16,35 @@ const projects: Project[] = [
   {
     title: "OpenSource Radar",
     description:
-      'Searches every untaken "good first issue" on GitHub, in your language, and helps you land your first PR.',
-    techStack: ["React", "TypeScript", "Node.js", "GitHub API", "Tailwind CSS"],
-    githubUrl: "https://github.com/Deepti-Nanda/opensource-radar",
-    liveUrl: "#",
-    thumbnail: "/projects/opensource-radar.jpg",
+      "OpenSource Radar helps developers find open issues they can contribute to, across all public projects on GitHub.",
+    techStack: ["React + Vite", "JavaScript", "Node.js", "GitHub API", "CSS"],
+    githubUrl: "https://github.com/opensource-radar/opensource-radar",
+    liveUrl: "https://opensource-radar.com/",
+    thumbnail: "",
   },
   {
     title: "Raksha",
     description:
-      "Offline AI health guardian for heat waves, floods and air pollution.",
-    techStack: ["Python", "TensorFlow", "React Native", "SQLite", "ML Kit"],
+      "Offline AI health guardian for heat waves, floods and smog. On-device risk scoring and emergency SOS.",
+    techStack: [
+      "React Native",
+      "TypeScript",
+      "Expo",
+      "Health Connect",
+      "On-device AI",
+    ],
     githubUrl: "https://github.com/Deepti-Nanda/raksha",
-    liveUrl: "#",
-    thumbnail: "/projects/raksha.jpg",
+    liveUrl: "https://claude.ai/artifact/HPoan1Xh1iyQxEW3r33v3S",
+    thumbnail: "",
   },
   {
     title: "A Pinch of Memories",
-    description: "Description and links will be added later.",
-    techStack: ["React", "Node.js", "MongoDB", "Express", "Tailwind CSS"],
-    githubUrl: "#",
-    liveUrl: "#",
-    thumbnail: "/projects/pinch-of-memories.jpg",
+    description:
+      "A Pinch of Memories is a nostalgic recipe website created to celebrate the connection between food, memories, traditions, and home.",
+    techStack: ["HTML5", "CSS", "JavaScript", "LocalStorage API"],
+    githubUrl: "https://github.com/Deepti-Nanda/APinchOfMemories",
+    liveUrl: "https://deepti-nanda.github.io/APinchOfMemories",
+    thumbnail: "",
   },
 ];
 
@@ -56,16 +63,16 @@ export function Projects() {
           Projects
         </h2>
 
-        <p className="text-[var(--muted)] text-center max-w-2xl mx-auto mb-8 sm:mb-12 px-2 text-sm sm:text-base leading-relaxed">
-          A selection of projects I've built, showcasing my full-stack
-          development skills and problem-solving approach.
+        <p className="mx-auto mb-8 max-w-2xl px-2 text-center text-sm leading-relaxed text-[var(--muted)] sm:mb-12 sm:text-base">
+          A collection of projects where I explore ideas, build practical
+          solutions, and apply my skills in software development.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 items-stretch">
+        <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 sm:gap-7 lg:grid-cols-3 lg:gap-8">
           {projects.map((project, index) => (
             <article
               key={project.title}
-              className="group relative flex flex-col min-w-0 bg-[var(--card-bg)] border border-[var(--card-border)] rounded-2xl overflow-hidden transition-all duration-300 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 animate-fade-in-up"
+              className="group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] transition-all duration-300 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Thumbnail */}
@@ -76,13 +83,13 @@ export function Projects() {
                     alt={`${project.title} preview`}
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center p-5 sm:p-8">
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="!p-6 text-center sm:!p-8">
                       <ExternalLink
-                        className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-[var(--muted)]"
+                        className="mx-auto mb-3 h-10 w-10 text-[var(--muted)] sm:mb-4 sm:h-12 sm:w-12"
                         aria-hidden="true"
                       />
                       <p className="text-sm text-[var(--muted)]">
@@ -93,19 +100,19 @@ export function Projects() {
                 )}
 
                 {/* Tech Stack Preview on Hover */}
-                <div className="pointer-events-none absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3 sm:p-4">
-                  <div className="flex flex-wrap gap-2 w-full">
+                <div className="pointer-events-none absolute inset-0 flex items-end bg-black/50 !p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:!p-5">
+                  <div className="flex w-full flex-wrap gap-2">
                     {project.techStack.slice(0, 4).map((tech) => (
                       <span
                         key={tech}
-                        className="skill-chip text-xs px-2 py-1 bg-white/10 border-white/20 text-white backdrop-blur-sm"
+                        className="skill-chip border-white/20 bg-white/10 px-2 py-1 text-xs text-white backdrop-blur-sm"
                       >
                         {tech}
                       </span>
                     ))}
 
                     {project.techStack.length > 4 && (
-                      <span className="skill-chip text-xs px-2 py-1 bg-white/10 border-white/20 text-white backdrop-blur-sm">
+                      <span className="skill-chip border-white/20 bg-white/10 px-2 py-1 text-xs text-white backdrop-blur-sm">
                         +{project.techStack.length - 4} more
                       </span>
                     )}
@@ -114,39 +121,27 @@ export function Projects() {
               </div>
 
               {/* Content */}
-              <div className="flex flex-1 flex-col p-4 sm:p-5 lg:p-6">
-                <h3 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-2 sm:mb-3 group-hover:text-[var(--accent)] transition-colors">
+              <div className="flex flex-1 flex-col !px-5 !py-5 sm:!px-6 sm:!py-6">
+                <h3 className="mb-4 min-h-8 text-lg font-semibold text-[var(--foreground)] transition-colors group-hover:text-[var(--accent)] sm:text-xl">
                   {project.title}
                 </h3>
 
-                <p className="text-[var(--muted)] text-sm leading-relaxed mb-4 line-clamp-3">
+                <p className="mb-8 min-h-[5.25rem] text-sm leading-7 text-[var(--muted)] line-clamp-3">
                   {project.description}
                 </p>
 
-                {/* Tech Stack Chips */}
-                <div
-                  className="flex flex-wrap gap-2 mb-5 sm:mb-6"
-                  aria-label="Technologies used"
-                >
-                  {project.techStack.map((tech) => (
-                    <span key={tech} className="skill-chip text-xs">
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-
                 {/* Action Buttons */}
-                <div className="flex gap-2 sm:gap-3 mt-auto">
+                <div className="mt-auto flex gap-2 pt-4 sm:gap-3">
                   {project.liveUrl && project.liveUrl !== "#" ? (
                     <a
                       href={project.liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-primary flex-1 min-w-0 min-h-11 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+                      className="btn-primary flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 text-xs sm:gap-2 sm:text-sm"
                       aria-label={`View ${project.title} live`}
                     >
                       <ExternalLink
-                        className="w-4 h-4 shrink-0"
+                        className="h-4 w-4 shrink-0"
                         aria-hidden="true"
                       />
                       Live
@@ -154,12 +149,12 @@ export function Projects() {
                   ) : (
                     <button
                       type="button"
-                      className="btn-primary flex-1 min-w-0 min-h-11 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm opacity-50 cursor-not-allowed"
+                      className="btn-primary flex min-h-11 min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1.5 text-xs opacity-50 sm:gap-2 sm:text-sm"
                       disabled
                       aria-label={`Live demo for ${project.title} coming soon`}
                     >
                       <ExternalLink
-                        className="w-4 h-4 shrink-0"
+                        className="h-4 w-4 shrink-0"
                         aria-hidden="true"
                       />
                       Live
@@ -171,11 +166,11 @@ export function Projects() {
                       href={project.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-secondary flex-1 min-w-0 min-h-11 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+                      className="btn-secondary flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 text-xs sm:gap-2 sm:text-sm"
                       aria-label={`View ${project.title} on GitHub`}
                     >
                       <GitHubIcon
-                        className="w-4 h-4 shrink-0"
+                        className="h-4 w-4 shrink-0"
                         aria-hidden="true"
                       />
                       GitHub
@@ -183,12 +178,12 @@ export function Projects() {
                   ) : (
                     <button
                       type="button"
-                      className="btn-secondary flex-1 min-w-0 min-h-11 flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm opacity-50 cursor-not-allowed"
+                      className="btn-secondary flex min-h-11 min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1.5 text-xs opacity-50 sm:gap-2 sm:text-sm"
                       disabled
                       aria-label={`GitHub repository for ${project.title} coming soon`}
                     >
                       <GitHubIcon
-                        className="w-4 h-4 shrink-0"
+                        className="h-4 w-4 shrink-0"
                         aria-hidden="true"
                       />
                       GitHub
