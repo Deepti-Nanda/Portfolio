@@ -1,61 +1,122 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import type { PointerEvent, MouseEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { useResume } from "@/components/resume-context";
 import {
+  Play,
   Pause,
   RotateCcw,
   X,
-  ChevronDown,
-  FileText,
-  Download,
   CheckCircle,
   AlertCircle,
-  Sparkles,
-  Play,
+  Code2,
+  Database,
+  Globe,
+  Layers,
+  Terminal,
+  GitBranch,
+  Server,
+  Braces,
 } from "lucide-react";
 
 const SKILLS = [
-  { name: "React", weight: 10, category: "Frontend" },
-  { name: "JavaScript", weight: 9, category: "Languages" },
-  { name: "HTML & CSS", weight: 8, category: "Frontend" },
-  { name: "Node.js", weight: 9, category: "Backend" },
-  { name: "Python", weight: 8, category: "Languages" },
-  { name: "Django", weight: 6, category: "Backend" },
-  { name: "Full-Stack Development", weight: 10, category: "Core" },
-  { name: "MongoDB", weight: 7, category: "Database" },
-  { name: "PostgreSQL", weight: 7, category: "Database" },
-  { name: "SQL", weight: 7, category: "Database" },
-  { name: "Data Structures", weight: 8, category: "Core" },
-  { name: "Machine Learning", weight: 6, category: "AI & Data" },
-  { name: "Data Visualization", weight: 6, category: "AI & Data" },
-  { name: "Data Analytics", weight: 6, category: "AI & Data" },
+  {
+    name: "React",
+    category: "Frontend",
+    description:
+      "Building interactive, component-based user interfaces with React and reusable UI patterns.",
+    icon: Layers,
+    color: "#61DAFB",
+  },
+  {
+    name: "JavaScript",
+    category: "Language",
+    description:
+      "Using JavaScript to build dynamic web applications and handle application logic.",
+    icon: Braces,
+    color: "#F7DF1E",
+  },
+  {
+    name: "HTML & CSS",
+    category: "Frontend",
+    description:
+      "Creating responsive, accessible layouts and styling polished web experiences.",
+    icon: Globe,
+    color: "#E98B52",
+  },
+  {
+    name: "Node.js",
+    category: "Backend",
+    description:
+      "Building server-side functionality and backend services with Node.js.",
+    icon: Server,
+    color: "#83CD29",
+  },
+  {
+    name: "Python",
+    category: "Language",
+    description:
+      "Using Python for programming, data processing, automation, and problem solving.",
+    icon: Terminal,
+    color: "#FFD43B",
+  },
+  {
+    name: "TypeScript",
+    category: "Language",
+    description:
+      "Writing more predictable JavaScript applications with static typing.",
+    icon: Code2,
+    color: "#3178C6",
+  },
+  {
+    name: "MongoDB",
+    category: "Database",
+    description:
+      "Working with document-oriented databases to store and manage application data.",
+    icon: Database,
+    color: "#47A248",
+  },
+  {
+    name: "SQL",
+    category: "Database",
+    description:
+      "Querying and managing structured data using relational database concepts.",
+    icon: Database,
+    color: "#E58C39",
+  },
+  {
+    name: "Git & GitHub",
+    category: "Tools",
+    description:
+      "Managing source code, tracking changes, and collaborating through Git and GitHub.",
+    icon: GitBranch,
+    color: "#F08C55",
+  },
+  {
+    name: "REST APIs",
+    category: "Backend",
+    description:
+      "Connecting applications with backend services through RESTful API endpoints.",
+    icon: Server,
+    color: "#A78BFA",
+  },
 ];
 
-interface Asteroid {
-  name: string;
+interface OrbitAsteroid {
   angle: number;
-  distance: number;
+  ring: number;
   radius: number;
-  speed: number;
   rotation: number;
   rotationSpeed: number;
-  color: string;
+  speed: number;
   vertices: { x: number; y: number }[];
-  baseDistance: number;
-  wobblePhase: number;
-  wobbleSpeed: number;
 }
 
-interface Particle {
+interface AsteroidPosition {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  maxLife: number;
-  color: string;
+  radius: number;
 }
 
 interface Projectile {
@@ -63,146 +124,119 @@ interface Projectile {
   y: number;
   vx: number;
   vy: number;
-  radius: number;
-  rotation: number;
   active: boolean;
-  asteroidIndex: number;
+}
+
+interface GameParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
 }
 
 interface GameAssets {
-  slingshot: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
   target: {
     x: number;
     y: number;
-    radius: number;
     baseX: number;
     baseY: number;
-    bobPhase: number;
+    radius: number;
+    phase: number;
   };
   projectiles: Projectile[];
-  wind: number;
-  dragStart: { x: number; y: number } | null;
-  isDragging: boolean;
-  particles: Particle[];
+  particles: GameParticle[];
   chest: {
     x: number;
     y: number;
-    radius: number;
     state: "falling" | "landed" | "open";
-    bouncePhase: number;
   } | null;
+  drag: {
+    x: number;
+    y: number;
+    active: boolean;
+  };
 }
 
 interface GameState {
   isOpen: boolean;
-  isPlaying: boolean;
   isPaused: boolean;
-  shotsRemaining: number;
+  shots: number;
   hits: number;
-  gameResult: "playing" | "won" | "lost" | null;
-  showSkillList: boolean;
+  result: "won" | "lost" | null;
 }
 
-const INITIAL_GAME_STATE: GameState = {
+const INITIAL_GAME: GameState = {
   isOpen: false,
-  isPlaying: false,
   isPaused: false,
-  shotsRemaining: 3,
+  shots: 3,
   hits: 0,
-  gameResult: null,
-  showSkillList: false,
+  result: null,
 };
 
-export function Skills() {
-  const { openResume, downloadResume } = useResume();
+const COLORS = [
+  "#8B7355",
+  "#A08A6B",
+  "#C9B896",
+  "#B8956C",
+  "#8B6914",
+  "#B8860B",
+  "#967B5C",
+  "#A58A72",
+  "#B7A58D",
+  "#C8B99E",
+];
 
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const asteroidsRef = useRef<Asteroid[]>([]);
+export function Skills() {
+  const { openResume } = useResume();
+  const orbitCanvasRef = useRef<HTMLCanvasElement>(null);
+  const orbitAnimationRef = useRef<number | null>(null);
+  const orbitDataRef = useRef<OrbitAsteroid[]>([]);
+  const asteroidPositionsRef = useRef<AsteroidPosition[]>([]);
 
   const gameCanvasRef = useRef<HTMLCanvasElement>(null);
   const gameAnimationRef = useRef<number | null>(null);
-
-  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME_STATE);
-
-  const gameStateRef = useRef<GameState>(INITIAL_GAME_STATE);
-
-  const [gameAssets, setGameAssets] = useState<GameAssets | null>(null);
-
   const gameAssetsRef = useRef<GameAssets | null>(null);
+  const gameStateRef = useRef<GameState>(INITIAL_GAME);
 
-  const updateGameState = useCallback((nextState: GameState) => {
-    gameStateRef.current = nextState;
-    setGameState(nextState);
+  const [selectedSkill, setSelectedSkill] = useState<number | null>(null);
+  const [gameState, setGameState] = useState<GameState>(INITIAL_GAME);
+
+  const updateGame = useCallback((next: GameState) => {
+    gameStateRef.current = next;
+    setGameState(next);
   }, []);
 
-  const updateGameAssets = useCallback((nextAssets: GameAssets) => {
-    gameAssetsRef.current = nextAssets;
-    setGameAssets(nextAssets);
-  }, []);
-
-  // Initialize asteroid data.
+  // Create evenly distributed asteroid data.
   useEffect(() => {
-    const colors = [
-      "#8B7355",
-      "#A08A6B",
-      "#C9B896",
-      "#D4C4A8",
-      "#B8956C",
-      "#8B6914",
-      "#A67C00",
-      "#B8860B",
-      "#DAA520",
-      "#CD950C",
-      "#967B5C",
-      "#A58A72",
-      "#B7A58D",
-      "#C8B99E",
-    ];
-
-    asteroidsRef.current = SKILLS.map((skill, index) => {
-      const baseDistance = 110 + (index % 3) * 75 + skill.weight * 4;
-
-      const radius = Math.max(18, Math.min(42, 14 + skill.weight * 2.5));
-
-      const vertexCount = 8 + Math.floor(Math.random() * 4);
-      const vertices: { x: number; y: number }[] = [];
-
-      for (let i = 0; i < vertexCount; i++) {
+    orbitDataRef.current = SKILLS.map((_, index) => {
+      const vertexCount = 8 + (index % 4);
+      const vertices = Array.from({ length: vertexCount }, (_, i) => {
         const angle = (i / vertexCount) * Math.PI * 2;
-        const variance = 0.75 + Math.random() * 0.35;
+        const variation = 0.78 + Math.random() * 0.3;
 
-        vertices.push({
-          x: Math.cos(angle) * variance,
-          y: Math.sin(angle) * variance,
-        });
-      }
+        return {
+          x: Math.cos(angle) * variation,
+          y: Math.sin(angle) * variation,
+        };
+      });
 
       return {
-        name: skill.name,
-        angle: (index / SKILLS.length) * Math.PI * 2,
-        distance: baseDistance,
-        radius,
-        speed: 0.00025 + Math.random() * 0.0004,
+        angle:
+          (index % 5) * ((Math.PI * 2) / 5) + (index >= 5 ? Math.PI / 5 : 0),
+        ring: index < 5 ? 0 : 1,
+        radius: 1,
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.002,
-        color: colors[index % colors.length],
+        rotationSpeed: (Math.random() - 0.5) * 0.0015,
+        speed: index < 5 ? 0.00016 : -0.00012,
         vertices,
-        baseDistance,
-        wobblePhase: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.001 + Math.random() * 0.002,
       };
     });
   }, []);
 
-  // Main asteroid belt animation.
+  // Orbit animation.
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = orbitCanvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -224,8 +258,8 @@ export function Skills() {
 
     resize();
 
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(canvas);
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
 
     const animate = (time: number) => {
       const dt = lastTime ? Math.min(time - lastTime, 40) : 16;
@@ -236,172 +270,243 @@ export function Skills() {
       const height = rect.height;
 
       if (!width || !height) {
-        animationRef.current = requestAnimationFrame(animate);
+        orbitAnimationRef.current = requestAnimationFrame(animate);
         return;
       }
 
+      const size = Math.min(width, height);
       const centerX = width / 2;
       const centerY = height / 2;
-      const currentAsteroids = asteroidsRef.current;
 
-      const maxBaseDistance = Math.max(
-        ...currentAsteroids.map((asteroid) => asteroid.baseDistance),
-      );
-
-      const maxAsteroidRadius = Math.max(
-        ...currentAsteroids.map((asteroid) => asteroid.radius),
-      );
-
-      // Keep asteroids and their labels inside the canvas.
-      const availableRadius = Math.max(
-        40,
-        Math.min(width, height) * 0.44 - maxAsteroidRadius - 36,
-      );
-
-      const orbitScale = Math.min(1, availableRadius / maxBaseDistance);
+      const scale = Math.min(size / 460, 1.25);
+      const innerOrbit = size * 0.25;
+      const outerOrbit = size * 0.39;
+      const characterRadius = Math.max(17, size * 0.075);
 
       ctx.clearRect(0, 0, width, height);
+      drawNightBackground(ctx, width, height, time);
 
-      drawStarfield(ctx, width, height, time);
-
-      const orbits = Array.from(
-        new Set(
-          currentAsteroids.map((asteroid) =>
-            Math.round(asteroid.baseDistance * orbitScale),
-          ),
-        ),
-      );
-
-      orbits.forEach((distance) => {
+      // Orbit paths.
+      [innerOrbit, outerOrbit].forEach((radius) => {
         ctx.beginPath();
-        ctx.arc(centerX, centerY, distance, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(147, 197, 253, 0.13)";
         ctx.lineWidth = 1;
+        ctx.setLineDash([3, 7]);
         ctx.stroke();
+        ctx.setLineDash([]);
       });
 
-      currentAsteroids.forEach((asteroid) => {
+      asteroidPositionsRef.current = [];
+
+      orbitDataRef.current.forEach((asteroid, index) => {
         asteroid.angle += asteroid.speed * dt;
-
-        const wobble =
-          Math.sin(time * asteroid.wobbleSpeed + asteroid.wobblePhase) * 6;
-
-        asteroid.distance = asteroid.baseDistance + wobble;
         asteroid.rotation += asteroid.rotationSpeed * dt;
 
-        const scaledDistance = asteroid.distance * orbitScale;
+        const orbitRadius = asteroid.ring === 0 ? innerOrbit : outerOrbit;
 
-        const x = centerX + Math.cos(asteroid.angle) * scaledDistance;
+        const x = centerX + Math.cos(asteroid.angle) * orbitRadius;
+        const y = centerY + Math.sin(asteroid.angle) * orbitRadius;
 
-        const y = centerY + Math.sin(asteroid.angle) * scaledDistance;
+        const radius = Math.max(8, Math.min(16, size * 0.034));
 
-        drawAsteroid(
+        asteroid.radius = radius;
+
+        asteroidPositionsRef.current[index] = {
+          x,
+          y,
+          radius,
+        };
+
+        drawOrbitAsteroid(
           ctx,
           x,
           y,
-          asteroid.radius,
+          radius,
           asteroid.rotation,
           asteroid.vertices,
-          asteroid.color,
-          asteroid.name,
+          COLORS[index],
         );
+
+        // Skill label.
+        const labelY = y + radius + Math.max(10, size * 0.025);
+
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = `${Math.max(8, Math.min(11, size * 0.024))}px system-ui`;
+        ctx.fillStyle = "#E2E8F0";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 5;
+
+        const label =
+          SKILLS[index].name.length > 14
+            ? SKILLS[index].name.slice(0, 13) + "…"
+            : SKILLS[index].name;
+
+        ctx.fillText(label, x, labelY, size * 0.2);
+        ctx.restore();
+
+        // Highlight selected asteroid.
+        if (selectedSkill === index) {
+          ctx.beginPath();
+          ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#60A5FA";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
       });
 
-      drawCentralFigure(ctx, centerX, centerY, time);
+      drawDeveloperCharacter(ctx, centerX, centerY, characterRadius, time);
 
-      animationRef.current = requestAnimationFrame(animate);
+      orbitAnimationRef.current = requestAnimationFrame(animate);
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    orbitAnimationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      resizeObserver.disconnect();
+      observer.disconnect();
 
-      if (animationRef.current !== null) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      if (orbitAnimationRef.current !== null) {
+        cancelAnimationFrame(orbitAnimationRef.current);
+        orbitAnimationRef.current = null;
       }
     };
-  }, []);
+  }, [selectedSkill]);
 
-  // Initialize or reset the game.
+  // Handle orbit clicks: asteroids show details; only the center character opens the game.
+  const handleOrbitClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = orbitCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const characterRadius = Math.min(rect.width, rect.height) * 0.075;
+
+    const centerDistance = Math.hypot(x - centerX, y - centerY);
+
+    if (centerDistance < characterRadius + 8) {
+      openGame();
+      return;
+    }
+
+    const positions = asteroidPositionsRef.current;
+
+    for (let index = 0; index < positions.length; index++) {
+      const asteroid = positions[index];
+      if (!asteroid) continue;
+
+      const distance = Math.hypot(x - asteroid.x, y - asteroid.y);
+
+      if (distance < asteroid.radius + 13) {
+        setSelectedSkill(index);
+        return;
+      }
+    }
+  };
+
+  // Initialize the slingshot game.
   const initGame = useCallback(() => {
     const canvas = gameCanvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-
     const width = rect.width;
     const height = rect.height;
 
     if (!width || !height) return;
 
-    const slingshotX = Math.min(100, Math.max(65, width * 0.23));
-    const slingshotY = height / 2 + 20;
+    const slingX = Math.max(45, width * 0.16);
+    const slingY = height * 0.65;
+    const targetRadius = Math.max(20, Math.min(34, height * 0.09));
 
-    const targetRadius = Math.min(
-      50,
-      Math.max(30, Math.min(width, height) * 0.11),
-    );
-
-    const targetBaseX = Math.max(slingshotX + 100, width - targetRadius - 65);
-
-    const targetBaseY = height / 2;
-
-    const initialAssets: GameAssets = {
-      slingshot: {
-        x: slingshotX,
-        y: slingshotY,
-        width: 24,
-        height: 110,
-      },
+    gameAssetsRef.current = {
       target: {
-        x: targetBaseX,
-        y: targetBaseY,
+        x: width * 0.78,
+        y: height * 0.43,
+        baseX: width * 0.78,
+        baseY: height * 0.43,
         radius: targetRadius,
-        baseX: targetBaseX,
-        baseY: targetBaseY,
-        bobPhase: 0,
+        phase: 0,
       },
       projectiles: [],
-      wind: (Math.random() - 0.5) * 1.2,
-      dragStart: null,
-      isDragging: false,
       particles: [],
       chest: null,
+      drag: {
+        x: slingX,
+        y: slingY,
+        active: false,
+      },
     };
 
-    const initialState: GameState = {
-      ...gameStateRef.current,
-      isPlaying: true,
-      isPaused: false,
-      shotsRemaining: 3,
-      hits: 0,
-      gameResult: null,
-    };
+    updateGame({
+      ...INITIAL_GAME,
+      isOpen: true,
+    });
+  }, [updateGame]);
 
-    updateGameAssets(initialAssets);
-    updateGameState(initialState);
-  }, [updateGameAssets, updateGameState]);
+  const openGame = () => {
+    updateGame({
+      ...INITIAL_GAME,
+      isOpen: true,
+    });
+  };
 
-  // Main game animation loop.
-  const startGameLoop = useCallback(() => {
+  const closeGame = () => {
+    updateGame(INITIAL_GAME);
+    gameAssetsRef.current = null;
+
+    if (gameAnimationRef.current !== null) {
+      cancelAnimationFrame(gameAnimationRef.current);
+      gameAnimationRef.current = null;
+    }
+  };
+
+  const resetGame = () => {
+    initGame();
+  };
+
+  // Game animation.
+  useEffect(() => {
+    if (!gameState.isOpen) return;
+
     const canvas = gameCanvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    resize();
+
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+
+    initGame();
+
     let lastTime = 0;
 
     const animate = (time: number) => {
       const dt = lastTime ? Math.min(time - lastTime, 40) : 16;
-
       lastTime = time;
 
       const assets = gameAssetsRef.current;
       const state = gameStateRef.current;
-      const currentAsteroids = asteroidsRef.current;
 
       if (!assets) {
         gameAnimationRef.current = requestAnimationFrame(animate);
@@ -412,123 +517,73 @@ export function Skills() {
       const width = rect.width;
       const height = rect.height;
 
-      if (!width || !height) {
-        gameAnimationRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
       ctx.clearRect(0, 0, width, height);
+      drawNightBackground(ctx, width, height, time);
 
-      ctx.fillStyle = "#050510";
-      ctx.fillRect(0, 0, width, height);
+      if (!state.isPaused && !state.result) {
+        assets.target.phase += dt * 0.002;
+        assets.target.x =
+          assets.target.baseX + Math.cos(assets.target.phase) * 18;
+        assets.target.y =
+          assets.target.baseY + Math.sin(assets.target.phase) * 24;
 
-      drawStarfield(ctx, width, height, time);
+        assets.projectiles.forEach((projectile) => {
+          if (!projectile.active) return;
 
-      // Move the target and projectiles only during active play.
-      if (!state.isPaused && !state.gameResult) {
-        assets.target.bobPhase += dt * 0.0025;
+          projectile.vy += 0.32 * (dt / 16);
+          projectile.x += projectile.vx * (dt / 16);
+          projectile.y += projectile.vy * (dt / 16);
 
-        const bobY = Math.sin(assets.target.bobPhase) * 35;
-        const driftX = Math.cos(assets.target.bobPhase * 0.8) * 25;
+          const distance = Math.hypot(
+            projectile.x - assets.target.x,
+            projectile.y - assets.target.y,
+          );
 
-        assets.target.x = assets.target.baseX + driftX;
-        assets.target.y = assets.target.baseY + bobY;
+          if (distance < assets.target.radius + 10) {
+            projectile.active = false;
 
-        assets.projectiles = assets.projectiles.map((projectile) => {
-          if (!projectile.active) return projectile;
+            const hits = gameStateRef.current.hits + 1;
+            const won = hits >= 2;
 
-          const frameScale = dt / 16;
-
-          const newVy = projectile.vy + 0.35 * frameScale;
-          const newVx = projectile.vx + assets.wind * 0.12 * frameScale;
-
-          const newX = projectile.x + newVx * frameScale;
-          const newY = projectile.y + newVy * frameScale;
-          const newRotation = projectile.rotation + 0.05;
-
-          // Target collision detection.
-          const dx = newX - assets.target.x;
-          const dy = newY - assets.target.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < assets.target.radius + projectile.radius) {
-            createHitParticles(assets, newX, newY);
-
-            const updatedHits = gameStateRef.current.hits + 1;
-            const won = updatedHits >= 2;
-
-            const nextState: GameState = {
+            updateGame({
               ...gameStateRef.current,
-              hits: updatedHits,
-              gameResult: won ? "won" : gameStateRef.current.gameResult,
-            };
-
-            updateGameState(nextState);
+              hits,
+              result: won ? "won" : null,
+            });
 
             if (won) {
               assets.chest = {
                 x: assets.target.x,
-                y: assets.target.y - 40,
-                radius: 36,
+                y: assets.target.y - 30,
                 state: "falling",
-                bouncePhase: 0,
               };
             }
 
-            return { ...projectile, active: false };
+            createGameParticles(assets, projectile.x, projectile.y);
           }
 
-          // Remove projectiles outside the canvas.
           if (
-            newX > width + 60 ||
-            newY > height + 60 ||
-            newX < -60 ||
-            newY < -60
+            projectile.x > width + 40 ||
+            projectile.y > height + 40 ||
+            projectile.x < -40
           ) {
-            return { ...projectile, active: false };
+            projectile.active = false;
           }
-
-          return {
-            ...projectile,
-            x: newX,
-            y: newY,
-            vx: newVx,
-            vy: newVy,
-            rotation: newRotation,
-          };
         });
       }
 
-      // Chest animation continues even after winning.
-      // This is intentionally outside the active-game condition.
       if (!state.isPaused && assets.chest) {
         if (assets.chest.state === "falling") {
-          const nextY = assets.chest.y + 7 * (dt / 16);
+          assets.chest.y += 6 * (dt / 16);
 
-          if (nextY >= height - 90) {
-            assets.chest = {
-              ...assets.chest,
-              y: height - 90,
-              state: "landed",
-              bouncePhase: 0,
-            };
-
-            createHitParticles(assets, assets.chest.x, assets.chest.y);
-          } else {
-            assets.chest = {
-              ...assets.chest,
-              y: nextY,
-            };
+          if (assets.chest.y >= height - 65) {
+            assets.chest.y = height - 65;
+            assets.chest.state = "landed";
+            createGameParticles(assets, assets.chest.x, assets.chest.y);
           }
-        } else if (assets.chest.state === "landed") {
-          assets.chest = {
-            ...assets.chest,
-            bouncePhase: assets.chest.bouncePhase + dt * 0.015,
-          };
         }
       }
 
-      // Particle animation also continues after winning.
       if (!state.isPaused) {
         assets.particles = assets.particles
           .map((particle) => ({
@@ -540,10 +595,9 @@ export function Skills() {
           .filter((particle) => particle.life > 0);
       }
 
-      // Draw the scene.
-      drawSlingshot(ctx, assets.slingshot, assets.dragStart, assets.isDragging);
+      drawSlingshot(ctx, width * 0.16, height * 0.65, assets.drag);
 
-      drawTarget(
+      drawGameTarget(
         ctx,
         assets.target.x,
         assets.target.y,
@@ -553,60 +607,41 @@ export function Skills() {
 
       assets.projectiles.forEach((projectile) => {
         if (!projectile.active) return;
-
-        const asteroid = currentAsteroids[projectile.asteroidIndex];
-
-        drawProjectile(
-          ctx,
-          projectile.x,
-          projectile.y,
-          projectile.radius,
-          projectile.rotation,
-          asteroid?.color || "#8B7355",
-          asteroid?.vertices,
-        );
+        drawGameAsteroid(ctx, projectile.x, projectile.y, 10);
       });
 
       if (assets.chest) {
-        drawChest(
+        drawGameChest(
           ctx,
           assets.chest.x,
           assets.chest.y,
-          assets.chest.radius,
           assets.chest.state,
-          assets.chest.bouncePhase,
           time,
         );
       }
 
       assets.particles.forEach((particle) => {
-        const alpha = Math.max(0, particle.life / particle.maxLife);
-
+        ctx.globalAlpha = Math.max(0, particle.life / 35);
+        ctx.fillStyle = "#FBBF24";
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 3 * alpha, 0, Math.PI * 2);
-
-        ctx.fillStyle = particle.color;
-        ctx.globalAlpha = alpha;
+        ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
       });
 
-      drawWindIndicator(ctx, width, height, assets.wind);
+      drawGameScore(ctx, width, gameStateRef.current);
 
-      drawGameHUD(ctx, width, height, gameStateRef.current);
-
-      // Check whether the player has run out of shots.
-      const latestState = gameStateRef.current;
+      const latest = gameStateRef.current;
 
       if (
-        latestState.shotsRemaining === 0 &&
+        latest.shots === 0 &&
         assets.projectiles.every((projectile) => !projectile.active) &&
-        latestState.hits < 2 &&
-        !latestState.gameResult
+        latest.hits < 2 &&
+        !latest.result
       ) {
-        updateGameState({
-          ...latestState,
-          gameResult: "lost",
+        updateGame({
+          ...latest,
+          result: "lost",
         });
       }
 
@@ -614,401 +649,331 @@ export function Skills() {
     };
 
     gameAnimationRef.current = requestAnimationFrame(animate);
-  }, [updateGameState]);
-
-  // Set the game canvas dimensions before starting the game loop.
-  useEffect(() => {
-    if (!gameState.isOpen || !gameState.isPlaying) return;
-
-    const canvas = gameCanvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const resizeGameCanvas = () => {
-      const rect = canvas.getBoundingClientRect();
-
-      if (!rect.width || !rect.height) return;
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-      const pixelWidth = Math.round(rect.width * dpr);
-      const pixelHeight = Math.round(rect.height * dpr);
-
-      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-        canvas.width = pixelWidth;
-        canvas.height = pixelHeight;
-      }
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    resizeGameCanvas();
-
-    const resizeObserver = new ResizeObserver(resizeGameCanvas);
-    resizeObserver.observe(canvas);
-
-    initGame();
-    startGameLoop();
 
     return () => {
-      resizeObserver.disconnect();
+      observer.disconnect();
 
       if (gameAnimationRef.current !== null) {
         cancelAnimationFrame(gameAnimationRef.current);
         gameAnimationRef.current = null;
       }
     };
-  }, [gameState.isOpen, gameState.isPlaying, initGame, startGameLoop]);
+  }, [gameState.isOpen, initGame, updateGame]);
 
-  // Slingshot pointer interactions.
-  const handlePointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     const assets = gameAssetsRef.current;
     const state = gameStateRef.current;
 
     if (
       !assets ||
       state.isPaused ||
-      state.gameResult ||
-      state.shotsRemaining === 0
+      state.result ||
+      state.shots === 0 ||
+      assets.projectiles.some((projectile) => projectile.active)
     ) {
       return;
     }
 
-    if (assets.projectiles.some((projectile) => projectile.active)) {
-      return;
+    const rect = gameCanvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const slingX = rect.width * 0.16;
+    const slingY = rect.height * 0.65;
+
+    if (Math.hypot(x - slingX, y - slingY) < 65) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      assets.drag = {
+        x,
+        y,
+        active: true,
+      };
+    }
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
+    const assets = gameAssetsRef.current;
+    if (!assets?.drag.active) return;
+
+    const rect = gameCanvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const slingX = rect.width * 0.16;
+    const slingY = rect.height * 0.65;
+
+    const dx = x - slingX;
+    const dy = y - slingY;
+    const distance = Math.hypot(dx, dy);
+    const maxDrag = 85;
+
+    const scale = distance > maxDrag ? maxDrag / distance : 1;
+
+    assets.drag.x = slingX + dx * scale;
+    assets.drag.y = slingY + dy * scale;
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLCanvasElement>) => {
+    const assets = gameAssetsRef.current;
+    if (!assets?.drag.active) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
     const rect = gameCanvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const slingX = rect.width * 0.16;
+    const slingY = rect.height * 0.65;
 
-    const dx = x - assets.slingshot.x;
-    const dy = y - assets.slingshot.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const dx = slingX - assets.drag.x;
+    const dy = slingY - assets.drag.y;
+    const distance = Math.hypot(dx, dy);
 
-    if (distance < 90) {
-      e.currentTarget.setPointerCapture(e.pointerId);
+    if (distance > 10) {
+      const power = Math.min(distance / 85, 1) * 17;
 
-      updateGameAssets({
-        ...assets,
-        dragStart: { x, y },
-        isDragging: true,
+      assets.projectiles.push({
+        x: slingX,
+        y: slingY,
+        vx: (dx / distance) * power,
+        vy: (dy / distance) * power,
+        active: true,
+      });
+
+      updateGame({
+        ...gameStateRef.current,
+        shots: gameStateRef.current.shots - 1,
       });
     }
+
+    assets.drag.active = false;
+    assets.drag.x = slingX;
+    assets.drag.y = slingY;
   };
 
-  const handlePointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
+  const handleChestClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const assets = gameAssetsRef.current;
-
-    if (!assets || !assets.isDragging || !assets.dragStart) return;
-
-    const rect = gameCanvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const dx = x - assets.slingshot.x;
-    const dy = y - assets.slingshot.y;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const maxDrag = 110;
-
-    let dragStart = { x, y };
-
-    if (distance > maxDrag) {
-      const angle = Math.atan2(dy, dx);
-
-      dragStart = {
-        x: assets.slingshot.x + Math.cos(angle) * maxDrag,
-        y: assets.slingshot.y + Math.sin(angle) * maxDrag,
-      };
-    }
-
-    updateGameAssets({
-      ...assets,
-      dragStart,
-    });
-  };
-
-  const handlePointerUp = (e?: PointerEvent<HTMLCanvasElement>) => {
-    const assets = gameAssetsRef.current;
-    const state = gameStateRef.current;
-
-    if (!assets || !assets.isDragging || !assets.dragStart) return;
-
-    if (e && e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-
-    const dx = assets.slingshot.x - assets.dragStart.x;
-    const dy = assets.slingshot.y - assets.dragStart.y;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance > 15) {
-      const angle = Math.atan2(dy, dx);
-      const power = Math.min(distance / 110, 1) * 21;
-
-      const vx = Math.cos(angle) * power;
-      const vy = Math.sin(angle) * power;
-
-      const asteroidIndex =
-        asteroidsRef.current.length > 0
-          ? (3 - state.shotsRemaining) % asteroidsRef.current.length
-          : 0;
-
-      const updatedAssets: GameAssets = {
-        ...assets,
-        projectiles: [
-          ...assets.projectiles,
-          {
-            x: assets.slingshot.x,
-            y: assets.slingshot.y,
-            vx,
-            vy,
-            radius: 18,
-            rotation: 0,
-            active: true,
-            asteroidIndex,
-          },
-        ],
-        wind: (Math.random() - 0.5) * 1.4,
-        dragStart: null,
-        isDragging: false,
-      };
-
-      updateGameAssets(updatedAssets);
-
-      updateGameState({
-        ...state,
-        shotsRemaining: state.shotsRemaining - 1,
-      });
-    } else {
-      updateGameAssets({
-        ...assets,
-        dragStart: null,
-        isDragging: false,
-      });
-    }
-  };
-
-  const handlePause = () => {
-    const currentState = gameStateRef.current;
-
-    updateGameState({
-      ...currentState,
-      isPaused: !currentState.isPaused,
-    });
-  };
-
-  const handleScatter = () => {
-    const assets = gameAssetsRef.current;
-    if (!assets) return;
-
-    createHitParticles(assets, assets.target.x, assets.target.y);
-  };
-
-  const handleReset = () => {
-    initGame();
-  };
-
-  const handleChestClick = (e: MouseEvent<HTMLCanvasElement>) => {
-    const assets = gameAssetsRef.current;
-
     if (!assets?.chest || assets.chest.state !== "landed") return;
 
     const rect = gameCanvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-    const dx = x - assets.chest.x;
-    const dy = y - assets.chest.y;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < 50) {
-      const updatedAssets: GameAssets = {
-        ...assets,
-        chest: {
-          ...assets.chest,
-          state: "open",
-        },
-      };
-
-      updateGameAssets(updatedAssets);
+    if (Math.hypot(x - assets.chest.x, y - assets.chest.y) < 45) {
+      assets.chest.state = "open";
 
       window.setTimeout(() => {
+        closeGame();
         openResume();
-      }, 600);
+      }, 650);
     }
   };
 
-  const closeGame = () => {
-    updateGameState({
-      ...gameStateRef.current,
-      isOpen: false,
-      isPlaying: false,
-    });
-
-    if (gameAnimationRef.current !== null) {
-      cancelAnimationFrame(gameAnimationRef.current);
-      gameAnimationRef.current = null;
-    }
-  };
-
-  const openGame = () => {
-    updateGameState({
-      ...gameStateRef.current,
-      isOpen: true,
-      isPlaying: true,
-    });
-  };
+  const selected = selectedSkill === null ? null : SKILLS[selectedSkill];
 
   return (
     <section
       id="skills"
-      className="reveal relative overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="reveal relative overflow-hidden bg-[var(--background)] py-16 text-[var(--foreground)] sm:py-20 lg:py-24"
       aria-labelledby="skills-heading"
     >
-      <div className="absolute inset-0 bg-[#050510]" aria-hidden="true" />
-
-      <div
-        className="starfield absolute inset-0 opacity-80"
-        aria-hidden="true"
-      />
-
       <div className="container relative z-10">
-        <div className="mb-10 text-center">
-          <span className="mb-2 block text-xs font-semibold uppercase tracking-widest text-blue-400">
-            Interactive Orbit
+        <div className="mb-10 text-center sm:mb-14">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            What I Work With
           </span>
 
-          <h2 id="skills-heading" className="section-title mb-4 text-white">
-            Skills Asteroid Belt
+          <h2 id="skills-heading" className="section-title mb-4">
+            Skills & Technologies
           </h2>
 
-          <p className="mx-auto max-w-2xl text-base leading-relaxed text-gray-300">
-            14 core technologies represented as tumbling rocky asteroids
-            orbiting Deepti.
-            <br />
-            <span className="font-medium text-blue-400">
-              Tap the figure in the center
-            </span>{" "}
-            to launch the Slingshot Challenge!
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+            The technologies and tools I use to build, explore, and solve
+            real-world problems.
           </p>
         </div>
 
-        {/* Main asteroid belt */}
-        <div className="group relative mx-auto mb-8 aspect-square w-full min-w-0 max-w-[580px] touch-none sm:mb-10">
-          <canvas
-            ref={canvasRef}
-            className="block h-full w-full cursor-pointer rounded-full"
-            onClick={openGame}
-            aria-label="Asteroid belt with skills orbiting Deepti. Click to play the game."
-          />
+        <div className="grid min-w-0 grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-10">
+          {/* LEFT: Skills showcase */}
+          <div className="min-w-0">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold text-[var(--foreground)]">
+                  My Toolkit
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  10 frequently used technologies
+                </p>
+              </div>
 
-          <div className="pointer-events-none absolute inset-0 rounded-full border border-blue-500/20 transition-colors group-hover:border-blue-500/50" />
+              <span className="rounded-full border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
+                10 Skills
+              </span>
+            </div>
 
-          <button
-            onClick={openGame}
-            className="absolute bottom-4 left-1/2 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-blue-600/90 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-105 hover:bg-blue-500 sm:bottom-6"
-          >
-            <Play className="h-4 w-4 fill-current" />
-            <span>Play Asteroid Challenge</span>
-          </button>
-        </div>
+            <div className="space-y-3">
+              {SKILLS.map((skill, index) => {
+                const Icon = skill.icon;
 
-        {/* Recruiter skill matrix toggle */}
-        <div className="text-center">
-          <button
-            onClick={() =>
-              updateGameState({
-                ...gameStateRef.current,
-                showSkillList: !gameStateRef.current.showSkillList,
-              })
-            }
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-gray-800 bg-gray-900/60 px-6 py-3 text-sm font-medium text-gray-300 transition-all hover:border-gray-700 hover:text-white"
-          >
-            <span>
-              {gameState.showSkillList
-                ? "Hide Full Skill Matrix"
-                : "View Full Skill Matrix (for recruiters)"}
-            </span>
+                return (
+                  <div
+                    key={skill.name}
+                    className="group flex min-w-0 items-center gap-4 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--accent)] sm:p-4"
+                  >
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                      style={{
+                        backgroundColor: `${skill.color}18`,
+                        color: skill.color,
+                      }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
 
-            <ChevronDown
-              className={`h-4 w-4 shrink-0 transition-transform ${
-                gameState.showSkillList ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-        </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-[var(--foreground)] sm:text-base">
+                          {skill.name}
+                        </h4>
 
-        {/* Skill matrix */}
-        {gameState.showSkillList && (
-          <div className="mx-auto mt-8 max-w-4xl animate-fade-in-up rounded-2xl border border-gray-800 bg-gray-900/80 p-4 sm:p-6 md:p-8">
-            <h3 className="mb-6 flex items-center gap-2 text-lg font-bold text-white">
-              <Sparkles className="h-5 w-5 shrink-0 text-blue-400" />
-              Technical Competencies (14 Skills)
-            </h3>
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted)] sm:text-xs">
+                          {skill.category}
+                        </span>
+                      </div>
 
-            <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {SKILLS.map((skill) => (
-                <div
-                  key={skill.name}
-                  className="flex flex-col justify-between rounded-xl border border-gray-800 bg-gray-950/60 p-3 transition-colors hover:border-blue-500/50"
-                >
-                  <span className="text-sm font-medium text-gray-200">
-                    {skill.name}
-                  </span>
-
-                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-800/60 pt-2 text-xs text-gray-400">
-                    <span>{skill.category}</span>
-
-                    <span className="whitespace-nowrap font-mono text-blue-400">
-                      Weight: {skill.weight}/10
-                    </span>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--card-border)]">
+                        <div
+                          className="h-full rounded-full transition-all duration-700 group-hover:brightness-110"
+                          style={{
+                            width: `${100 - index * 3}%`,
+                            backgroundColor: skill.color,
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        )}
+
+          {/* RIGHT: Always-visible night-sky asteroid box */}
+          <div className="min-w-0">
+            <div className="mb-5">
+              <h3 className="text-xl font-bold text-[var(--foreground)]">
+                Interactive Skill Orbit
+              </h3>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Explore the orbit. Select an asteroid to learn about a skill.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-slate-700/70 bg-[#050510] p-3 shadow-xl shadow-black/10 sm:p-5">
+              <div className="relative mx-auto aspect-square w-full max-w-[560px] overflow-hidden rounded-2xl">
+                <canvas
+                  ref={orbitCanvasRef}
+                  className="block h-full w-full cursor-pointer"
+                  onClick={handleOrbitClick}
+                  aria-label="Interactive orbit of ten skills. Select an asteroid to see its description, or select the central character to open the game."
+                />
+
+                <div className="pointer-events-none absolute inset-0 rounded-2xl border border-blue-300/10" />
+
+                <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-blue-400/20 bg-slate-950/70 px-3 py-1 text-[10px] font-medium tracking-wider text-blue-200 sm:text-xs">
+                  DEVELOPER UNIVERSE
+                </div>
+
+                <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/75 px-3 py-1.5 text-center text-[10px] text-slate-300 sm:text-xs">
+                  Tap an asteroid or the character
+                </div>
+              </div>
+
+              {/* Selected skill details */}
+              <div className="mt-4 min-h-[112px] rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4">
+                {selected ? (
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: selected.color }}
+                    />
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-semibold text-white">
+                          {selected.name}
+                        </h4>
+
+                        <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] text-blue-300">
+                          {selected.category}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm">
+                        {selected.description}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-[76px] flex-col justify-center">
+                    <p className="text-sm font-semibold text-white">
+                      Explore my skills
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
+                      Click any orbiting asteroid to see how I use that
+                      technology. Click the character in the centre to launch
+                      the challenge.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+                <span className="h-2 w-2 rounded-full bg-blue-400" />
+                <span>10 technologies in orbit</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Game modal */}
+      {/* Slingshot game */}
       {gameState.isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-2 backdrop-blur-md animate-fade-in-up sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
           onClick={closeGame}
         >
           <div
-            className="relative flex h-[min(82dvh,680px)] max-h-[calc(100dvh-1rem)] min-h-[min(360px,calc(100dvh-1rem))] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-800 bg-[#050510] shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[92dvh] min-h-[360px] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-[#050510] shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
-            {/* Header */}
-            <div className="relative z-20 flex min-h-[56px] shrink-0 items-center justify-between gap-2 border-b border-gray-800 bg-gray-950/95 p-3 sm:min-h-[64px] sm:px-6">
-              <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-3 py-3 sm:px-5">
+              <div>
                 <h3 className="text-sm font-bold text-white sm:text-base">
                   Asteroid Slingshot
                 </h3>
-
-                <span className="hidden rounded border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300 sm:inline">
-                  Target Radius: 50px
-                </span>
+                <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
+                  Hit the moving target twice to unlock the chest.
+                </p>
               </div>
 
-              <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+              <div className="flex shrink-0 items-center gap-1">
                 <button
-                  onClick={handlePause}
-                  className="min-h-10 min-w-10 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                  title={gameState.isPaused ? "Resume" : "Pause"}
+                  onClick={() =>
+                    updateGame({
+                      ...gameStateRef.current,
+                      isPaused: !gameStateRef.current.isPaused,
+                    })
+                  }
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
                   aria-label={gameState.isPaused ? "Resume game" : "Pause game"}
                 >
                   {gameState.isPaused ? (
@@ -1019,27 +984,16 @@ export function Skills() {
                 </button>
 
                 <button
-                  onClick={handleScatter}
-                  className="min-h-10 min-w-10 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                  title="Scatter particles"
-                  aria-label="Scatter particles"
-                >
-                  <Sparkles className="h-4 w-4" />
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="min-h-10 min-w-10 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                  title="Reset Game"
-                  aria-label="Reset game"
+                  onClick={resetGame}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                  aria-label="Restart game"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
 
                 <button
                   onClick={closeGame}
-                  className="min-h-10 min-w-10 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
-                  title="Close"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
                   aria-label="Close game"
                 >
                   <X className="h-4 w-4" />
@@ -1047,11 +1001,10 @@ export function Skills() {
               </div>
             </div>
 
-            {/* Game canvas */}
-            <div className="relative z-0 min-h-0 flex-1 touch-none overflow-hidden">
+            <div className="relative min-h-0 flex-1 touch-none">
               <canvas
                 ref={gameCanvasRef}
-                className="block h-full w-full cursor-crosshair"
+                className="block h-full min-h-[280px] w-full cursor-crosshair"
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
@@ -1060,67 +1013,35 @@ export function Skills() {
               />
 
               {gameState.isPaused && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60">
-                  <span className="text-xl font-bold uppercase tracking-widest text-white">
-                    Paused
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <span className="text-xl font-bold tracking-widest text-white">
+                    PAUSED
                   </span>
                 </div>
               )}
 
-              {/* Win overlay */}
-              {gameState.gameResult === "won" && (
-                <div className="pointer-events-none absolute left-1/2 top-3 z-10 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 rounded-xl border border-emerald-400/30 bg-gray-950/90 p-3 text-center shadow-xl backdrop-blur-md animate-fade-in-up sm:top-4 sm:p-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <CheckCircle className="h-5 w-5 shrink-0 text-emerald-400" />
-                    <h4 className="text-base font-bold text-white sm:text-lg">
-                      Target Hit! (2/2)
-                    </h4>
-                  </div>
-
-                  <p className="mt-1 text-xs text-gray-300 sm:text-sm">
-                    Awesome shooting! The chest has landed on Earth. Tap the
-                    glowing chest or use the buttons below to view the resume.
+              {gameState.result === "won" && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-10 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-xl border border-emerald-400/30 bg-slate-950/90 p-3 text-center shadow-xl sm:p-4">
+                  <CheckCircle className="mx-auto h-6 w-6 text-emerald-400" />
+                  <h4 className="mt-1 font-bold text-white">Target Hit! 2/2</h4>
+                  <p className="mt-1 text-xs text-slate-300">
+                    The chest is on the ground. Tap it to reveal your resume.
                   </p>
-
-                  <div className="pointer-events-auto mt-3 flex flex-wrap justify-center gap-2">
-                    <button
-                      onClick={() => {
-                        openResume();
-                        closeGame();
-                      }}
-                      className="btn-primary flex min-h-10 items-center gap-2 px-3 py-2 text-xs sm:text-sm"
-                    >
-                      <FileText className="h-4 w-4" />
-                      View Resume
-                    </button>
-
-                    <button
-                      onClick={downloadResume}
-                      className="btn-secondary flex min-h-10 items-center gap-2 border-gray-700 px-3 py-2 text-xs text-white sm:text-sm"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download PDF
-                    </button>
-                  </div>
                 </div>
               )}
 
-              {gameState.gameResult === "lost" && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 p-4 text-center animate-fade-in-up sm:p-6">
-                  <AlertCircle className="mb-3 h-12 w-12 text-rose-500 sm:h-16 sm:w-16" />
-
-                  <h4 className="text-xl font-bold text-white sm:text-2xl">
+              {gameState.result === "lost" && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 p-4 text-center">
+                  <AlertCircle className="h-12 w-12 text-rose-400" />
+                  <h4 className="mt-3 text-xl font-bold text-white">
                     Try Again!
                   </h4>
-
-                  <p className="mt-2 max-w-md text-xs text-gray-300 sm:text-sm">
-                    You scored {gameState.hits}/2 hits. You need 2 hits to
-                    unlock the chest resume.
+                  <p className="mt-2 text-sm text-slate-300">
+                    You scored {gameState.hits}/2 hits.
                   </p>
-
                   <button
-                    onClick={handleReset}
-                    className="btn-primary mt-6 flex min-h-11 items-center gap-2 px-6 py-2.5 text-sm"
+                    onClick={resetGame}
+                    className="mt-5 flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
                   >
                     <RotateCcw className="h-4 w-4" />
                     Play Again
@@ -1129,10 +1050,9 @@ export function Skills() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="shrink-0 border-t border-gray-800 bg-gray-950/80 px-3 py-2 text-center text-[10px] text-gray-400 sm:px-4 sm:text-xs">
-              Drag backward from the slingshot on the left and release. Gravity,
-              shifting wind, and target bobbing are active!
+            <div className="shrink-0 border-t border-slate-800 bg-slate-950 px-3 py-2 text-center text-[10px] text-slate-400 sm:text-xs">
+              Drag the asteroid backwards from the slingshot and release to
+              launch it.
             </div>
           </div>
         </div>
@@ -1141,27 +1061,37 @@ export function Skills() {
   );
 }
 
-// Drawing routines.
+// --------------------------------------------------
+// Orbit drawing helpers
+// --------------------------------------------------
 
-function drawStarfield(
+function drawNightBackground(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   time: number,
 ) {
-  if (!width || !height) return;
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#080D20");
+  gradient.addColorStop(0.55, "#10172D");
+  gradient.addColorStop(1, "#050510");
 
-  for (let i = 0; i < 70; i++) {
-    const x = (i * 137 + time * 0.02) % width;
-    const y = (i * 269) % height;
-    const alpha = 0.2 + ((i * 17) % 80) / 100;
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-    ctx.fillRect(x, y, (i % 2) + 1, (i % 2) + 1);
+  for (let i = 0; i < 65; i++) {
+    const x = (i * 137.5) % width;
+    const y = (i * 83.7) % height;
+    const twinkle = 0.35 + Math.sin(time * 0.001 + i) * 0.25;
+
+    ctx.fillStyle = `rgba(219, 234, 254, ${twinkle})`;
+    ctx.beginPath();
+    ctx.arc(x, y, i % 5 === 0 ? 1.4 : 0.8, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
-function drawAsteroid(
+function drawOrbitAsteroid(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -1169,7 +1099,6 @@ function drawAsteroid(
   rotation: number,
   vertices: { x: number; y: number }[],
   color: string,
-  name: string,
 ) {
   ctx.save();
   ctx.translate(x, y);
@@ -1188,196 +1117,165 @@ function drawAsteroid(
   ctx.closePath();
 
   const gradient = ctx.createRadialGradient(
-    -radius * 0.3,
-    -radius * 0.3,
-    2,
+    -radius * 0.35,
+    -radius * 0.35,
+    1,
     0,
     0,
     radius,
   );
 
-  gradient.addColorStop(0, "#D4C4A8");
-  gradient.addColorStop(0.6, color);
-  gradient.addColorStop(1, "#3A2A1A");
+  gradient.addColorStop(0, "#E5D5B8");
+  gradient.addColorStop(0.55, color);
+  gradient.addColorStop(1, "#332719");
 
   ctx.fillStyle = gradient;
   ctx.fill();
 
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.restore();
-
-  // Skill label.
-  ctx.save();
-
-  ctx.fillStyle = "#E2E8F0";
-  ctx.font = `${Math.max(
-    10,
-    Math.min(13, radius * 0.45),
-  )}px system-ui, sans-serif`;
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-  ctx.shadowBlur = 4;
-
-  ctx.fillText(name, x, y + radius + 12, radius * 4.2);
+  // Small crater details.
+  ctx.fillStyle = "rgba(30, 25, 20, 0.3)";
+  ctx.beginPath();
+  ctx.arc(-radius * 0.25, radius * 0.15, radius * 0.16, 0, Math.PI * 2);
+  ctx.arc(radius * 0.3, -radius * 0.2, radius * 0.11, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
 
-function drawCentralFigure(
+function drawDeveloperCharacter(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
+  radius: number,
   time: number,
 ) {
-  const bob = Math.sin(time * 0.0025) * 5;
+  const bob = Math.sin(time * 0.002) * radius * 0.07;
 
   ctx.save();
   ctx.translate(x, y + bob);
 
-  // Glowing aura.
-  const aura = ctx.createRadialGradient(0, 0, 5, 0, 0, 45);
+  // Outer glow.
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, radius * 1.9);
+  glow.addColorStop(0, "rgba(59, 130, 246, 0.38)");
+  glow.addColorStop(1, "rgba(59, 130, 246, 0)");
 
-  aura.addColorStop(0, "rgba(59, 130, 246, 0.35)");
-  aura.addColorStop(1, "rgba(59, 130, 246, 0)");
-
-  ctx.fillStyle = aura;
+  ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(0, 0, 45, 0, Math.PI * 2);
+  ctx.arc(0, 0, radius * 1.9, 0, Math.PI * 2);
   ctx.fill();
 
-  // Torso.
-  ctx.fillStyle = "#2563EB";
+  // Body.
+  ctx.fillStyle = "#3B82F6";
   ctx.beginPath();
-  ctx.ellipse(0, 10, 18, 22, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, radius * 0.55, radius * 0.62, radius * 0.7, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Head.
-  ctx.fillStyle = "#F3D2C1";
+  ctx.fillStyle = "#F2CFB9";
   ctx.beginPath();
-  ctx.arc(0, -18, 16, 0, Math.PI * 2);
+  ctx.arc(0, -radius * 0.45, radius * 0.58, 0, Math.PI * 2);
   ctx.fill();
 
   // Hair.
-  ctx.fillStyle = "#1E1B18";
+  ctx.fillStyle = "#28201F";
   ctx.beginPath();
-  ctx.arc(0, -20, 17, Math.PI * 0.8, Math.PI * 2.2);
+  ctx.arc(0, -radius * 0.57, radius * 0.6, Math.PI, Math.PI * 2);
+  ctx.lineTo(radius * 0.52, -radius * 0.35);
+  ctx.quadraticCurveTo(0, -radius * 0.75, -radius * 0.52, -radius * 0.35);
   ctx.fill();
 
   // Eyes.
-  ctx.fillStyle = "#0F172A";
+  ctx.fillStyle = "#1E293B";
   ctx.beginPath();
-  ctx.arc(-5, -18, 2.2, 0, Math.PI * 2);
-  ctx.arc(5, -18, 2.2, 0, Math.PI * 2);
+  ctx.arc(-radius * 0.2, -radius * 0.42, radius * 0.055, 0, Math.PI * 2);
+  ctx.arc(radius * 0.2, -radius * 0.42, radius * 0.055, 0, Math.PI * 2);
   ctx.fill();
 
   // Smile.
-  ctx.strokeStyle = "#0F172A";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#8B5149";
+  ctx.lineWidth = Math.max(1, radius * 0.045);
   ctx.beginPath();
-  ctx.arc(0, -14, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+  ctx.arc(0, -radius * 0.28, radius * 0.17, 0.15 * Math.PI, 0.85 * Math.PI);
   ctx.stroke();
 
   // Laptop.
-  ctx.fillStyle = "#94A3B8";
-  ctx.fillRect(-12, 2, 24, 12);
+  ctx.fillStyle = "#CBD5E1";
+  ctx.fillRect(-radius * 0.48, radius * 0.4, radius * 0.96, radius * 0.42);
 
   ctx.fillStyle = "#38BDF8";
-  ctx.fillRect(-10, 4, 20, 8);
+  ctx.fillRect(-radius * 0.4, radius * 0.45, radius * 0.8, radius * 0.29);
+
+  // Interactive hint ring.
+  ctx.strokeStyle = "rgba(96, 165, 250, 0.75)";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 1.25, 0, Math.PI * 2);
+  ctx.stroke();
 
   ctx.restore();
 }
 
+// Slingshot game drawing helpers
 function drawSlingshot(
   ctx: CanvasRenderingContext2D,
-  slingshot: GameAssets["slingshot"],
-  dragStart: GameAssets["dragStart"],
-  isDragging: boolean,
+  x: number,
+  y: number,
+  drag: GameAssets["drag"],
 ) {
-  const { x, y, height } = slingshot;
-
   ctx.save();
 
-  // Y-shaped wooden frame.
-  ctx.strokeStyle = "#64748B";
-  ctx.lineWidth = 6;
   ctx.lineCap = "round";
+  ctx.strokeStyle = "#A78B65";
+  ctx.lineWidth = 7;
 
   ctx.beginPath();
-  ctx.moveTo(x, y + height / 2);
+  ctx.moveTo(x, y + 45);
   ctx.lineTo(x, y);
-  ctx.lineTo(x - 20, y - 30);
+  ctx.lineTo(x - 15, y - 22);
 
   ctx.moveTo(x, y);
-  ctx.lineTo(x + 20, y - 30);
+  ctx.lineTo(x + 15, y - 22);
   ctx.stroke();
 
-  // Slingshot bands.
-  ctx.strokeStyle = isDragging ? "#EF4444" : "#A1A1AA";
+  ctx.strokeStyle = "#D6A77A";
   ctx.lineWidth = 3;
 
   ctx.beginPath();
 
-  if (dragStart && isDragging) {
-    ctx.moveTo(x - 20, y - 30);
-    ctx.lineTo(dragStart.x, dragStart.y);
-    ctx.lineTo(x + 20, y - 30);
+  if (drag.active) {
+    ctx.moveTo(x - 15, y - 22);
+    ctx.lineTo(drag.x, drag.y);
+    ctx.lineTo(x + 15, y - 22);
   } else {
-    ctx.moveTo(x - 20, y - 30);
+    ctx.moveTo(x - 15, y - 22);
     ctx.lineTo(x, y);
-    ctx.lineTo(x + 20, y - 30);
+    ctx.lineTo(x + 15, y - 22);
   }
 
   ctx.stroke();
 
-  // Draw the asteroid ammunition.
-  if (!isDragging) {
-    drawProjectile(ctx, x, y, 15, 0, "#A08A6B", [
-      { x: -0.8, y: -0.3 },
-      { x: -0.3, y: -0.9 },
-      { x: 0.5, y: -0.8 },
-      { x: 0.9, y: -0.1 },
-      { x: 0.5, y: 0.8 },
-      { x: -0.4, y: 0.9 },
-      { x: -0.9, y: 0.3 },
-    ]);
-  } else if (dragStart) {
-    // Keep the asteroid attached to the pulled band.
-    drawProjectile(ctx, dragStart.x, dragStart.y, 15, 0, "#A08A6B", [
-      { x: -0.8, y: -0.3 },
-      { x: -0.3, y: -0.9 },
-      { x: 0.5, y: -0.8 },
-      { x: 0.9, y: -0.1 },
-      { x: 0.5, y: 0.8 },
-      { x: -0.4, y: 0.9 },
-      { x: -0.9, y: 0.3 },
-    ]);
-  }
+  drawGameAsteroid(ctx, drag.active ? drag.x : x, drag.active ? drag.y : y, 10);
 
-  // Aim helper line.
-  if (dragStart && isDragging) {
-    const dx = x - dragStart.x;
-    const dy = y - dragStart.y;
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-    ctx.setLineDash([4, 4]);
+  if (drag.active) {
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = "rgba(255,255,255,0.45)";
+    ctx.lineWidth = 1.5;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + dx * 3, y + dy * 3);
+    ctx.lineTo(x + (x - drag.x) * 2, y + (y - drag.y) * 2);
     ctx.stroke();
-
     ctx.setLineDash([]);
   }
 
   ctx.restore();
 }
 
-function drawTarget(
+function drawGameTarget(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -1387,191 +1285,138 @@ function drawTarget(
   ctx.save();
   ctx.translate(x, y);
 
-  // Outer ring.
-  ctx.strokeStyle = "rgba(239, 68, 68, 0.8)";
+  const pulse = 1 + Math.sin(time * 0.004) * 0.06;
+
+  ctx.strokeStyle = "rgba(248, 113, 113, 0.85)";
   ctx.lineWidth = 3;
 
   ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.arc(0, 0, radius * pulse, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Inner rings.
-  ctx.strokeStyle = "rgba(239, 68, 68, 0.5)";
+  ctx.strokeStyle = "rgba(248, 113, 113, 0.45)";
   ctx.lineWidth = 2;
 
   ctx.beginPath();
-  ctx.arc(0, 0, radius * 0.6, 0, Math.PI * 2);
-  ctx.arc(0, 0, radius * 0.3, 0, Math.PI * 2);
+  ctx.arc(0, 0, radius * 0.65, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Figure inside the target.
-  drawCentralFigure(ctx, 0, 0, time);
+  ctx.fillStyle = "#F87171";
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 0.22, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
 
-function drawProjectile(
+function drawGameAsteroid(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   radius: number,
-  rotation: number,
-  color: string,
-  vertices?: { x: number; y: number }[],
 ) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(rotation);
 
-  if (vertices?.length) {
-    ctx.beginPath();
+  ctx.fillStyle = "#A08A6B";
+  ctx.strokeStyle = "#E5D5B8";
+  ctx.lineWidth = 1.5;
 
-    vertices.forEach((vertex, index) => {
-      const vx = vertex.x * radius;
-      const vy = vertex.y * radius;
+  ctx.beginPath();
+  ctx.moveTo(-radius, -radius * 0.3);
+  ctx.lineTo(-radius * 0.4, -radius);
+  ctx.lineTo(radius * 0.5, -radius * 0.8);
+  ctx.lineTo(radius, 0);
+  ctx.lineTo(radius * 0.45, radius * 0.8);
+  ctx.lineTo(-radius * 0.6, radius);
+  ctx.closePath();
 
-      if (index === 0) ctx.moveTo(vx, vy);
-      else ctx.lineTo(vx, vy);
-    });
-
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  } else {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.strokeStyle = "#FFFFFF";
-  ctx.lineWidth = 2;
+  ctx.fill();
   ctx.stroke();
 
   ctx.restore();
 }
 
-function drawChest(
+function drawGameChest(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  radius: number,
   state: "falling" | "landed" | "open",
-  bouncePhase: number,
   time: number,
 ) {
   ctx.save();
   ctx.translate(x, y);
 
-  const bounce = state === "landed" ? Math.sin(bouncePhase * 10) * 4 : 0;
-
-  ctx.translate(0, bounce);
-
-  // Glow when ready to open.
   if (state === "landed") {
-    const glow = ctx.createRadialGradient(0, 0, 5, 0, 0, radius + 20);
-
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 48);
     glow.addColorStop(0, "rgba(245, 158, 11, 0.35)");
     glow.addColorStop(1, "rgba(245, 158, 11, 0)");
 
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(0, 0, radius + 20, 0, Math.PI * 2);
+    ctx.arc(0, 0, 48, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Chest body.
   ctx.fillStyle = "#8B5A2B";
-  ctx.fillRect(-22, -14, 44, 28);
+  ctx.fillRect(-20, -12, 40, 25);
 
-  ctx.strokeStyle = "#F59E0B";
+  ctx.strokeStyle = "#FBBF24";
   ctx.lineWidth = 3;
-  ctx.strokeRect(-22, -14, 44, 28);
+  ctx.strokeRect(-20, -12, 40, 25);
 
-  // Lock.
-  ctx.fillStyle = "#F59E0B";
-  ctx.beginPath();
-  ctx.arc(0, 0, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (state === "landed") {
-    const pulse = Math.sin(time * 0.008) * 0.3 + 0.7;
-
-    ctx.fillStyle = `rgba(245, 158, 11, ${pulse})`;
-    ctx.font = "bold 11px system-ui";
-    ctx.textAlign = "center";
-
-    ctx.fillText("TAP CHEST TO OPEN RESUME", 0, -24);
-  }
+  ctx.fillStyle = "#FBBF24";
+  ctx.fillRect(-3, -6, 6, 12);
 
   if (state === "open") {
     ctx.fillStyle = "#FDE68A";
-    ctx.font = "bold 12px system-ui";
+    ctx.fillRect(-17, -38, 34, 27);
+
+    ctx.fillStyle = "#92400E";
+    ctx.font = "bold 8px system-ui";
     ctx.textAlign = "center";
-    ctx.fillText("UNLOCKED!", 0, -28);
+    ctx.fillText("RESUME", 0, -22);
+  } else if (state === "landed") {
+    ctx.fillStyle = `rgba(251, 191, 36, ${0.7 + Math.sin(time * 0.008) * 0.3})`;
+    ctx.font = "bold 10px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("TAP TO OPEN", 0, -23);
   }
 
   ctx.restore();
 }
 
-function drawWindIndicator(
+function drawGameScore(
   ctx: CanvasRenderingContext2D,
   width: number,
-  height: number,
-  wind: number,
+  state: GameState,
 ) {
   ctx.save();
 
-  ctx.fillStyle = "#94A3B8";
-  ctx.font = width < 360 ? "11px system-ui" : "12px system-ui";
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
-
-  ctx.fillText(
-    `Wind: ${wind > 0 ? "→" : "←"} ${Math.abs(wind).toFixed(1)}`,
-    width - 16,
-    26,
-  );
-
-  ctx.restore();
-}
-
-function drawGameHUD(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  gameState: GameState,
-) {
-  ctx.save();
-
-  const fontSize = width < 360 ? 11 : 13;
-
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = `bold ${fontSize}px system-ui`;
+  ctx.font = "bold 12px system-ui";
+  ctx.fillStyle = "#E2E8F0";
   ctx.textBaseline = "middle";
 
   ctx.textAlign = "left";
-  ctx.fillText(`Shots: ${gameState.shotsRemaining}/3`, 16, 26);
+  ctx.fillText(`Shots: ${state.shots}/3`, 14, 22);
 
   ctx.textAlign = "center";
-  ctx.fillText(`Hits: ${gameState.hits}/2`, width / 2, 26);
+  ctx.fillText(`Hits: ${state.hits}/2`, width / 2, 22);
 
   ctx.restore();
 }
 
-function createHitParticles(gameAssets: GameAssets, x: number, y: number) {
-  for (let i = 0; i < 25; i++) {
+function createGameParticles(assets: GameAssets, x: number, y: number) {
+  for (let i = 0; i < 22; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 6;
+    const speed = 1.5 + Math.random() * 4;
 
-    gameAssets.particles.push({
+    assets.particles.push({
       x,
       y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      life: 45,
-      maxLife: 45,
-      color: `hsl(${200 + Math.random() * 60}, 100%, 65%)`,
+      life: 35,
     });
   }
 }
