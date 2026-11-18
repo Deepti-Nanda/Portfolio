@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ArrowUpRight, ExternalLink } from "lucide-react";
 import { GitHubIcon } from "./brand-icons";
 
 interface Project {
@@ -194,6 +194,17 @@ export function Projects() {
             </article>
           ))}
         </div>
+      </div>
+      <div className="mt-12 flex justify-center">
+        <a
+          href="https://github.com/Deepti-Nanda?tab=repositories"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--card-border)] px-6 py-3 text-sm font-medium text-[var(--foreground)] transition-all duration-300 hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:text-white"
+        >
+          Explore more
+          <ArrowUpRight size={16} />
+        </a>
       </div>
     </section>
   );
