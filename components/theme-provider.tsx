@@ -1,12 +1,18 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark";
 
 interface ThemeContextType {
   theme: Theme;
-  resolvedTheme: "light" | "dark";
+  resolvedTheme: Theme;
   setTheme: (theme: Theme) => void;
 }
 
@@ -15,74 +21,58 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({
   children,
   attribute = "data-theme",
-  defaultTheme = "system",
-  enableSystem = true,
+  defaultTheme = "light",
   disableTransitionOnChange = false,
 }: {
   children: ReactNode;
   attribute?: string;
   defaultTheme?: Theme;
-  enableSystem?: boolean;
   disableTransitionOnChange?: boolean;
 }) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) {
+    const stored = localStorage.getItem("theme");
+
+    if (stored === "light" || stored === "dark") {
       setTheme(stored);
     }
+
+    setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
-    let resolved: "light" | "dark" = "light";
 
-    if (theme === "system" && enableSystem) {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    } else {
-      resolved = theme === "dark" ? "dark" : "light";
-    }
-
-    setResolvedTheme(resolved);
-    root.setAttribute(attribute, resolved);
+    root.setAttribute(attribute, theme);
     localStorage.setItem("theme", theme);
 
     if (disableTransitionOnChange) {
-      document.documentElement.style.setProperty("--transition", "none");
+      root.style.setProperty("--transition", "none");
+
       requestAnimationFrame(() => {
-        document.documentElement.style.removeProperty("--transition");
+        root.style.removeProperty("--transition");
       });
     }
-  }, [theme, enableSystem, attribute, disableTransitionOnChange, mounted]);
+  }, [theme, attribute, disableTransitionOnChange, mounted]);
 
-  useEffect(() => {
-    if (!enableSystem || theme !== "system") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      const resolved = e.matches ? "dark" : "light";
-      setResolvedTheme(resolved);
-      document.documentElement.setAttribute(attribute, resolved);
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme, enableSystem, attribute]);
+  const contextValue: ThemeContextType = {
+    theme,
+    resolvedTheme: theme,
+    setTheme,
+  };
 
   const defaultContext: ThemeContextType = {
-    theme: "system",
-    resolvedTheme: "light",
+    theme: defaultTheme,
+    resolvedTheme: defaultTheme,
     setTheme: () => {},
   };
 
   return (
-    <ThemeContext.Provider value={mounted ? { theme, resolvedTheme, setTheme } : defaultContext}>
+    <ThemeContext.Provider value={mounted ? contextValue : defaultContext}>
       {children}
     </ThemeContext.Provider>
   );
@@ -90,8 +80,14 @@ export function ThemeProvider({
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+
   if (!context) {
-    return { theme: "system" as const, resolvedTheme: "light" as const, setTheme: () => {} };
+    return {
+      theme: "light" as const,
+      resolvedTheme: "light" as const,
+      setTheme: () => {},
+    };
   }
+
   return context;
 }
