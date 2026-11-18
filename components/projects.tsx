@@ -48,6 +48,14 @@ const projects: Project[] = [
   },
 ];
 
+/** "OpenSource Radar" -> "opensource-radar", for stable card anchors. */
+function toSlug(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export function Projects() {
   return (
     <section
@@ -72,7 +80,10 @@ export function Projects() {
           {projects.map((project, index) => (
             <article
               key={project.title}
-              className="group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] transition-all duration-300 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 animate-fade-in-up"
+              // Linked from the Skills orbit's "Used in" list; the card is
+              // highlighted when it's the link target.
+              id={`project-${toSlug(project.title)}`}
+              className="group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] transition-all duration-300 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 animate-fade-in-up scroll-mt-24 target:border-[var(--accent)] target:ring-2 target:ring-[var(--accent)]/40"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Thumbnail */}

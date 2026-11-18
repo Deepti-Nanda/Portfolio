@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { PointerEvent } from "react";
 import { useResume } from "@/components/resume-context";
+import { SKILL_LOGOS, type SkillLogo } from "@/components/skill-logos";
 import {
   Play,
   Pause,
@@ -11,96 +12,186 @@ import {
   X,
   CheckCircle,
   AlertCircle,
-  Code2,
-  Database,
-  Globe,
-  Layers,
-  Terminal,
-  GitBranch,
-  Server,
-  Braces,
+  ArrowUpRight,
 } from "lucide-react";
 
-const SKILLS = [
+// Where a skill was used. Internal links jump to a project card or section;
+// entries without a link are shown as plain text.
+const PLACES = {
+  "opensource-radar": {
+    label: "OpenSource-Radar",
+    href: "#project-opensource-radar",
+  },
+  raksha: { label: "Raksha", href: "#project-raksha" },
+  "pinch-of-memories": {
+    label: "A Pinch of Memories",
+    href: "#project-a-pinch-of-memories",
+  },
+  internships: { label: "Data & ML internships", href: "#experience" },
+  leetcode: {
+    label: "238 LeetCode problems",
+    href: "https://leetcode.com/u/Deepti_Nanda/",
+  },
+  coursework: { label: "DBMS coursework" },
+} satisfies Record<string, { label: string; href?: string }>;
+
+type PlaceId = keyof typeof PLACES;
+
+/** Projects that can be shown as a constellation of the skills they used. */
+const CONSTELLATIONS = [
   {
-    name: "React",
-    category: "Frontend",
+    id: "opensource-radar",
+    label: "OpenSource-Radar",
+    summary:
+      "GitHub issue discovery platform with GitHub sign-in, saved issues synced across devices, and CI on every pull request.",
+  },
+  {
+    id: "raksha",
+    label: "Raksha",
+    summary:
+      "Offline AI health guardian for Android that warns about heat, flood and smog risks, with an emergency SOS.",
+  },
+  {
+    id: "internships",
+    label: "Internships",
+    summary:
+      "Data Analyst (Edunet Foundation – VOIS) and Machine Learning (YHills) virtual internships.",
+  },
+] as const satisfies readonly { id: PlaceId; label: string; summary: string }[];
+
+type ConstellationId = (typeof CONSTELLATIONS)[number]["id"];
+
+interface Skill {
+  name: string;
+  category: string;
+  description: string;
+  color: string;
+  /** 0 = inner ring (languages), 1 = outer ring (frameworks & tools). */
+  ring: 0 | 1;
+  usedIn: PlaceId[];
+}
+
+const RING_LABELS = ["LANGUAGES", "FRAMEWORKS & TOOLS"] as const;
+
+const SKILLS: Skill[] = [
+  // Inner ring: languages.
+  {
+    name: "Java",
+    category: "Language",
     description:
-      "Building interactive, component-based user interfaces with React and reusable UI patterns.",
-    icon: Layers,
-    color: "#61DAFB",
+      "My main language for data structures and algorithms: 238 LeetCode problems solved in Java.",
+    color: "#F89820",
+    ring: 0,
+    usedIn: ["leetcode"],
   },
   {
     name: "JavaScript",
     category: "Language",
     description:
-      "Using JavaScript to build dynamic web applications and handle application logic.",
-    icon: Braces,
+      "My everyday web language (ES6+), from OpenSource-Radar's search and filters to a LocalStorage-powered recipe site.",
     color: "#F7DF1E",
-  },
-  {
-    name: "HTML & CSS",
-    category: "Frontend",
-    description:
-      "Creating responsive, accessible layouts and styling polished web experiences.",
-    icon: Globe,
-    color: "#E98B52",
-  },
-  {
-    name: "Node.js",
-    category: "Backend",
-    description:
-      "Building server-side functionality and backend services with Node.js.",
-    icon: Server,
-    color: "#83CD29",
-  },
-  {
-    name: "Python",
-    category: "Language",
-    description:
-      "Using Python for programming, data processing, automation, and problem solving.",
-    icon: Terminal,
-    color: "#FFD43B",
+    ring: 0,
+    usedIn: ["opensource-radar", "pinch-of-memories"],
   },
   {
     name: "TypeScript",
     category: "Language",
     description:
-      "Writing more predictable JavaScript applications with static typing.",
-    icon: Code2,
+      "Typed, predictable code. Raksha is written in TypeScript and checked by 1,450+ automated tests.",
     color: "#3178C6",
+    ring: 0,
+    usedIn: ["raksha"],
   },
   {
-    name: "MongoDB",
-    category: "Database",
+    name: "Python",
+    category: "Language",
     description:
-      "Working with document-oriented databases to store and manage application data.",
-    icon: Database,
-    color: "#47A248",
+      "Cleaning, exploring and modelling data across HR, agriculture and business datasets in two internships.",
+    color: "#FFD43B",
+    ring: 0,
+    usedIn: ["internships"],
   },
   {
     name: "SQL",
     category: "Database",
     description:
-      "Querying and managing structured data using relational database concepts.",
-    icon: Database,
+      "Querying and designing relational databases, grounded in DBMS coursework.",
     color: "#E58C39",
+    ring: 0,
+    usedIn: ["coursework"],
   },
   {
-    name: "Git & GitHub",
-    category: "Tools",
+    name: "HTML & CSS",
+    category: "Frontend",
     description:
-      "Managing source code, tracking changes, and collaborating through Git and GitHub.",
-    icon: GitBranch,
-    color: "#F08C55",
+      "Responsive, accessible layouts and styling, including light and dark themes.",
+    color: "#E98B52",
+    ring: 0,
+    usedIn: ["opensource-radar", "pinch-of-memories"],
+  },
+  // Outer ring: frameworks & tools.
+  {
+    name: "React",
+    category: "Frontend",
+    description:
+      "Component-based interfaces. OpenSource-Radar is a React + Vite app with 9 search filters, live suggestions and shareable searches.",
+    color: "#61DAFB",
+    ring: 1,
+    usedIn: ["opensource-radar"],
+  },
+  {
+    name: "React Native",
+    category: "Mobile",
+    description:
+      "Built Raksha with React Native and Expo: an Android app combining wearable vitals with live weather and air quality.",
+    color: "#C4B5FD",
+    ring: 1,
+    usedIn: ["raksha"],
+  },
+  {
+    name: "Node.js",
+    category: "Backend",
+    description:
+      "Server-side JavaScript, including the serverless functions behind OpenSource-Radar's GitHub sign-in.",
+    color: "#83CD29",
+    ring: 1,
+    usedIn: ["opensource-radar"],
+  },
+  {
+    name: "Redis",
+    category: "Database",
+    description:
+      "Upstash Redis keeps OpenSource-Radar users' saved issues in sync across their devices.",
+    color: "#FF4438",
+    ring: 1,
+    usedIn: ["opensource-radar"],
   },
   {
     name: "REST APIs",
     category: "Backend",
     description:
-      "Connecting applications with backend services through RESTful API endpoints.",
-    icon: Server,
+      "Integrating APIs: the GitHub API for OpenSource-Radar, and live weather and air-quality data for Raksha.",
     color: "#A78BFA",
+    ring: 1,
+    usedIn: ["opensource-radar", "raksha"],
+  },
+  {
+    name: "Git & GitHub",
+    category: "Tools",
+    description:
+      "Version control and collaboration, with GitHub Actions running tests on every pull request.",
+    color: "#F08C55",
+    ring: 1,
+    usedIn: ["opensource-radar"],
+  },
+  {
+    name: "Pandas / ML",
+    category: "Data & ML",
+    description:
+      "Pandas, NumPy, Matplotlib and Scikit-learn for analysing datasets, charting trends and building supervised learning models.",
+    color: "#F472B6",
+    ring: 1,
+    usedIn: ["internships"],
   },
 ];
 
@@ -108,10 +199,14 @@ interface OrbitAsteroid {
   angle: number;
   ring: number;
   radius: number;
-  rotation: number;
-  rotationSpeed: number;
   speed: number;
-  vertices: { x: number; y: number }[];
+  /** Offset so the logos float up and down out of step with each other. */
+  bobPhase: number;
+}
+
+interface OrbitLogo {
+  kind: SkillLogo["kind"];
+  paths: Path2D[];
 }
 
 interface AsteroidPosition {
@@ -178,6 +273,13 @@ const INITIAL_GAME: GameState = {
 };
 
 const TARGET_IMAGE_SRC = "/game/deepti-target.jpg";
+const PORTRAIT_IMAGE_SRC = "/game/deepti-portrait.jpg";
+
+// Orbit layout, as fractions of the orbit box's size. The rings sit far
+// enough out that the logos and their labels clear the centre portrait.
+const PORTRAIT_SIZE_RATIO = 0.165;
+const INNER_ORBIT_RATIO = 0.285;
+const OUTER_ORBIT_RATIO = 0.405;
 const HIT_REACTION_MS = 450;
 
 // Slingshot game tuning.
@@ -204,9 +306,25 @@ function getTargetRadius(width: number, height: number) {
   return Math.max(28, Math.min(46, Math.min(width, height) * 0.12));
 }
 
+/** The cartoon portrait in the middle of the orbit. */
 function getCharacterRadius(size: number) {
-  return Math.max(17, size * 0.075);
+  return Math.max(36, size * PORTRAIT_SIZE_RATIO);
 }
+
+/** The skill logo badges on the orbit rings. */
+function getLogoRadius(size: number) {
+  return Math.max(12, Math.min(26, size * 0.04));
+}
+
+/** Indexes into SKILLS of the skills each constellation connects. */
+const CONSTELLATION_MEMBERS = Object.fromEntries(
+  CONSTELLATIONS.map((constellation) => [
+    constellation.id,
+    SKILLS.flatMap((skill, index) =>
+      skill.usedIn.includes(constellation.id) ? [index] : [],
+    ),
+  ]),
+) as Record<ConstellationId, number[]>;
 
 function clampDrag(sling: Point, x: number, y: number): Point {
   const dx = x - sling.x;
@@ -249,33 +367,26 @@ function createGameAssets(width: number, height: number): GameAssets {
   };
 }
 
-const COLORS = [
-  "#8B7355",
-  "#A08A6B",
-  "#C9B896",
-  "#B8956C",
-  "#8B6914",
-  "#B8860B",
-  "#967B5C",
-  "#A58A72",
-  "#B7A58D",
-  "#C8B99E",
-];
-
 export function Skills() {
   const { openResume } = useResume();
   const orbitCanvasRef = useRef<HTMLCanvasElement>(null);
   const orbitDataRef = useRef<OrbitAsteroid[]>([]);
   const asteroidPositionsRef = useRef<AsteroidPosition[]>([]);
   const selectedSkillRef = useRef<number | null>(null);
+  const activeConstellationRef = useRef<ConstellationId | null>(null);
 
   const gameCanvasRef = useRef<HTMLCanvasElement>(null);
   const gameAssetsRef = useRef<GameAssets | null>(null);
   const gameStateRef = useRef<GameState>(INITIAL_GAME);
+  // Her cartoon: a face close-up for the slingshot target, and the full
+  // picture for the orbit's centre.
   const targetImageRef = useRef<HTMLImageElement | null>(null);
+  const portraitImageRef = useRef<HTMLImageElement | null>(null);
   const chestTimeoutRef = useRef<number | null>(null);
 
   const [selectedSkill, setSelectedSkill] = useState<number | null>(null);
+  const [activeConstellation, setActiveConstellation] =
+    useState<ConstellationId | null>(null);
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME);
 
   const updateGame = useCallback((next: GameState) => {
@@ -319,40 +430,44 @@ export function Skills() {
     selectedSkillRef.current = selectedSkill;
   }, [selectedSkill]);
 
-  // Preload the cartoon target so it is ready before the game opens.
   useEffect(() => {
-    const image = new window.Image();
-    image.decoding = "async";
-    image.src = TARGET_IMAGE_SRC;
-    targetImageRef.current = image;
+    activeConstellationRef.current = activeConstellation;
+  }, [activeConstellation]);
+
+  // Preload both cartoon images so they are ready before they're drawn.
+  useEffect(() => {
+    const load = (src: string) => {
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = src;
+      return image;
+    };
+
+    targetImageRef.current = load(TARGET_IMAGE_SRC);
+    portraitImageRef.current = load(PORTRAIT_IMAGE_SRC);
   }, []);
 
   // Cancel a pending "open resume" timer if the section unmounts.
   useEffect(() => clearChestTimeout, [clearChestTimeout]);
 
-  // Create evenly distributed asteroid data.
+  // Spread each ring's skills evenly around it.
   useEffect(() => {
-    orbitDataRef.current = SKILLS.map((_, index) => {
-      const vertexCount = 8 + (index % 4);
-      const vertices = Array.from({ length: vertexCount }, (_, i) => {
-        const angle = (i / vertexCount) * Math.PI * 2;
-        const variation = 0.78 + Math.random() * 0.3;
+    const ringCounts = [0, 1].map(
+      (ring) => SKILLS.filter((skill) => skill.ring === ring).length,
+    );
+    const placed = [0, 0];
 
-        return {
-          x: Math.cos(angle) * variation,
-          y: Math.sin(angle) * variation,
-        };
-      });
+    orbitDataRef.current = SKILLS.map((skill, index) => {
+      const slot = placed[skill.ring]++;
+      const step = (Math.PI * 2) / ringCounts[skill.ring];
 
       return {
-        angle:
-          (index % 5) * ((Math.PI * 2) / 5) + (index >= 5 ? Math.PI / 5 : 0),
-        ring: index < 5 ? 0 : 1,
+        // Offset the outer ring by half a step so logos don't line up.
+        angle: slot * step + (skill.ring === 1 ? step / 2 : 0),
+        ring: skill.ring,
         radius: 1,
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.0015,
-        speed: index < 5 ? 0.00016 : -0.00012,
-        vertices,
+        speed: skill.ring === 0 ? 0.00016 : -0.00012,
+        bobPhase: index * 1.7,
       };
     });
   }, []);
@@ -396,6 +511,14 @@ export function Skills() {
     });
     visibilityObserver.observe(canvas);
 
+    // Parse each skill's SVG logo once, not every frame.
+    const logos: (OrbitLogo | null)[] = SKILLS.map((skill) => {
+      const logo = SKILL_LOGOS[skill.name];
+      return logo
+        ? { kind: logo.kind, paths: logo.paths.map((d) => new Path2D(d)) }
+        : null;
+    });
+
     const animate = (time: number) => {
       frameId = requestAnimationFrame(animate);
 
@@ -412,83 +535,124 @@ export function Skills() {
       const centerX = width / 2;
       const centerY = height / 2;
 
-      const innerOrbit = size * 0.25;
-      const outerOrbit = size * 0.39;
+      const innerOrbit = size * INNER_ORBIT_RATIO;
+      const outerOrbit = size * OUTER_ORBIT_RATIO;
       const characterRadius = getCharacterRadius(size);
-      const asteroidRadius = Math.max(8, Math.min(16, size * 0.034));
+      const logoRadius = getLogoRadius(size);
       const selectedIndex = selectedSkillRef.current;
+      const activeId = activeConstellationRef.current;
+      const members = activeId ? CONSTELLATION_MEMBERS[activeId] : null;
 
       ctx.clearRect(0, 0, width, height);
       drawNightBackground(ctx, width, height, time);
 
-      // Orbit paths.
+      // Orbit paths, each labelled with what it holds.
+      const ringRadii = [innerOrbit, outerOrbit];
+
       ctx.strokeStyle = "rgba(147, 197, 253, 0.13)";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 7]);
-      [innerOrbit, outerOrbit].forEach((radius) => {
+      ringRadii.forEach((radius) => {
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.stroke();
       });
       ctx.setLineDash([]);
 
+      // Ring labels sit in gaps the logos never cross: just inside the bottom
+      // of the inner ring, and just outside the top of the outer ring (the
+      // logos' own name labels hang below them, toward those other sides).
+      const ringFont = Math.max(8, Math.min(11, size * 0.017));
+      const labelGap = logoRadius + Math.max(8, size * 0.016);
+      drawRingLabel(
+        ctx,
+        centerX,
+        centerY,
+        innerOrbit - labelGap,
+        RING_LABELS[0],
+        ringFont,
+        "bottom",
+      );
+      drawRingLabel(
+        ctx,
+        centerX,
+        centerY,
+        outerOrbit + labelGap,
+        RING_LABELS[1],
+        ringFont,
+        "top",
+      );
+
+      // Move every logo first, so constellation lines can be drawn beneath them.
+      const positions = asteroidPositionsRef.current;
+
       orbitDataRef.current.forEach((asteroid, index) => {
         asteroid.angle += asteroid.speed * dt;
-        asteroid.rotation += asteroid.rotationSpeed * dt;
+        asteroid.radius = logoRadius;
 
         const orbitRadius = asteroid.ring === 0 ? innerOrbit : outerOrbit;
+        const bob =
+          Math.sin(time * 0.0015 + asteroid.bobPhase) * logoRadius * 0.12;
 
-        const x = centerX + Math.cos(asteroid.angle) * orbitRadius;
-        const y = centerY + Math.sin(asteroid.angle) * orbitRadius;
-
-        asteroid.radius = asteroidRadius;
-
-        asteroidPositionsRef.current[index] = {
-          x,
-          y,
-          radius: asteroidRadius,
+        positions[index] = {
+          x: centerX + Math.cos(asteroid.angle) * orbitRadius,
+          y: centerY + Math.sin(asteroid.angle) * orbitRadius + bob,
+          radius: logoRadius,
         };
+      });
 
-        drawOrbitAsteroid(
+      if (members) {
+        drawConstellation(ctx, centerX, centerY, members, positions, time);
+      }
+
+      const labelFont = `${Math.max(9, Math.min(13, size * 0.022))}px system-ui`;
+
+      SKILLS.forEach((skill, index) => {
+        const position = positions[index];
+        if (!position) return;
+
+        const { x, y } = position;
+        const isMember = members ? members.includes(index) : false;
+        const isDimmed = members !== null && !isMember;
+
+        drawSkillLogo(
           ctx,
           x,
           y,
-          asteroidRadius,
-          asteroid.rotation,
-          asteroid.vertices,
-          COLORS[index],
+          logoRadius,
+          logos[index],
+          skill.color,
+          selectedIndex === index,
+          isMember,
+          isDimmed,
         );
 
         // Skill label.
-        const labelY = y + asteroidRadius + Math.max(10, size * 0.025);
-
         ctx.save();
+        ctx.globalAlpha = isDimmed ? 0.3 : 1;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = `${Math.max(8, Math.min(11, size * 0.024))}px system-ui`;
+        ctx.font = labelFont;
         ctx.fillStyle = "#E2E8F0";
         ctx.shadowColor = "#000000";
         ctx.shadowBlur = 5;
-
-        const label =
-          SKILLS[index].name.length > 14
-            ? SKILLS[index].name.slice(0, 13) + "…"
-            : SKILLS[index].name;
-
-        ctx.fillText(label, x, labelY, size * 0.2);
+        ctx.fillText(
+          skill.name,
+          x,
+          y + logoRadius + Math.max(10, size * 0.026),
+          size * 0.2,
+        );
         ctx.restore();
-
-        // Highlight selected asteroid.
-        if (selectedIndex === index) {
-          ctx.beginPath();
-          ctx.arc(x, y, asteroidRadius + 5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#60A5FA";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        }
       });
 
-      drawDeveloperCharacter(ctx, centerX, centerY, characterRadius, time);
+      drawCenterPortrait(
+        ctx,
+        centerX,
+        centerY,
+        characterRadius,
+        time,
+        portraitImageRef.current,
+      );
     };
 
     frameId = requestAnimationFrame(animate);
@@ -885,6 +1049,13 @@ export function Skills() {
   };
 
   const selected = selectedSkill === null ? null : SKILLS[selectedSkill];
+  const constellation =
+    CONSTELLATIONS.find((item) => item.id === activeConstellation) ?? null;
+
+  const toggleConstellation = (id: ConstellationId) => {
+    setActiveConstellation((current) => (current === id ? null : id));
+    setSelectedSkill(null);
+  };
 
   return (
     <section
@@ -908,146 +1079,200 @@ export function Skills() {
           </p>
         </div>
 
-        <div className="grid min-w-0 grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-10">
-          {/* LEFT: Skills showcase */}
-          <div className="min-w-0">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xl font-bold text-[var(--foreground)]">
-                  My Toolkit
-                </h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  10 frequently used technologies
-                </p>
-              </div>
+        {/* Text version of the orbit, for screen readers and search engines. */}
+        <ul className="sr-only">
+          {SKILLS.map((skill) => (
+            <li key={skill.name}>
+              {skill.name} ({skill.category}): {skill.description} Used in:{" "}
+              {skill.usedIn.map((id) => PLACES[id].label).join(", ")}.
+            </li>
+          ))}
+        </ul>
 
-              <span className="rounded-full border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
-                10 Skills
+        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
+          {/* Orbit */}
+          <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-700/70 bg-[#050510] p-3 shadow-xl shadow-black/10 sm:p-5">
+            <div
+              className="mb-3 flex flex-wrap items-center justify-center gap-2"
+              role="group"
+              aria-label="Show the skills a project used"
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:text-xs">
+                Constellations
               </span>
-            </div>
 
-            <div className="space-y-3">
-              {SKILLS.map((skill, index) => {
-                const Icon = skill.icon;
+              {CONSTELLATIONS.map((item) => {
+                const isActive = activeConstellation === item.id;
 
                 return (
-                  <div
-                    key={skill.name}
-                    className="group flex min-w-0 items-center gap-4 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--accent)] sm:p-4"
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleConstellation(item.id)}
+                    aria-pressed={isActive}
+                    className={`min-h-9 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                      isActive
+                        ? "border-sky-300/70 bg-sky-400/15 text-sky-100 shadow-[0_0_16px_rgba(56,189,248,0.35)]"
+                        : "border-slate-700 bg-slate-950/70 text-slate-300 hover:border-sky-400/50 hover:text-white"
+                    }`}
                   >
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                      style={{
-                        backgroundColor: `${skill.color}18`,
-                        color: skill.color,
-                      }}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-sm font-semibold text-[var(--foreground)] sm:text-base">
-                          {skill.name}
-                        </h4>
-
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--muted)] sm:text-xs">
-                          {skill.category}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--card-border)]">
-                        <div
-                          className="h-full rounded-full transition-all duration-700 group-hover:brightness-110"
-                          style={{
-                            width: `${100 - index * 3}%`,
-                            backgroundColor: skill.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                    {item.label}
+                  </button>
                 );
               })}
             </div>
+
+            <div className="relative mx-auto aspect-square w-full max-w-[760px] overflow-hidden rounded-2xl">
+              <canvas
+                ref={orbitCanvasRef}
+                className="block h-full w-full cursor-pointer"
+                onClick={handleOrbitClick}
+                aria-label={`Interactive orbit of ${SKILLS.length} skill logos: languages on the inner ring, frameworks and tools on the outer ring. Select a logo to see where it was used, or select the portrait in the centre to open the game.`}
+              />
+
+              <div className="pointer-events-none absolute inset-0 rounded-2xl border border-blue-300/10" />
+            </div>
           </div>
 
-          {/* RIGHT: Always-visible night-sky asteroid box */}
-          <div className="min-w-0">
-            <div className="mb-5">
-              <h3 className="text-xl font-bold text-[var(--foreground)]">
-                Interactive Skill Orbit
-              </h3>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                Explore the orbit. Select an asteroid to learn about a skill.
-              </p>
-            </div>
-
-            <div className="overflow-hidden rounded-3xl border border-slate-700/70 bg-[#050510] p-3 shadow-xl shadow-black/10 sm:p-5">
-              <div className="relative mx-auto aspect-square w-full max-w-[560px] overflow-hidden rounded-2xl">
-                <canvas
-                  ref={orbitCanvasRef}
-                  className="block h-full w-full cursor-pointer"
-                  onClick={handleOrbitClick}
-                  aria-label="Interactive orbit of ten skills. Select an asteroid to see its description, or select the central character to open the game."
-                />
-
-                <div className="pointer-events-none absolute inset-0 rounded-2xl border border-blue-300/10" />
-
-                <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-blue-400/20 bg-slate-950/70 px-3 py-1 text-[10px] font-medium tracking-wider text-blue-200 sm:text-xs">
-                  DEVELOPER UNIVERSE
-                </div>
-
-                <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-950/75 px-3 py-1.5 text-center text-[10px] text-slate-300 sm:text-xs">
-                  Tap an asteroid or the character
-                </div>
-              </div>
-
-              {/* Selected skill details */}
-              <div className="mt-4 min-h-[112px] rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4">
-                {selected ? (
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: selected.color }}
-                    />
-
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="font-semibold text-white">
-                          {selected.name}
-                        </h4>
-
-                        <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] text-blue-300">
-                          {selected.category}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-xs leading-relaxed text-slate-300 sm:text-sm">
-                        {selected.description}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex h-full min-h-[76px] flex-col justify-center">
-                    <p className="text-sm font-semibold text-white">
-                      Explore my skills
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-400 sm:text-sm">
-                      Click any orbiting asteroid to see how I use that
-                      technology. Click the character in the centre to launch
-                      the challenge.
-                    </p>
-                  </div>
+          {/* Details */}
+          <aside
+            className="min-w-0 rounded-3xl border border-slate-700/70 bg-[#050510] p-5 shadow-xl shadow-black/10"
+            aria-live="polite"
+          >
+            {selected ? (
+              <div>
+                {constellation && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSkill(null)}
+                    className="mb-3 text-xs font-medium text-sky-300 transition hover:text-white"
+                  >
+                    ← {constellation.label}
+                  </button>
                 )}
-              </div>
 
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-                <span className="h-2 w-2 rounded-full bg-blue-400" />
-                <span>10 technologies in orbit</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: selected.color }}
+                  />
+                  <h3 className="text-lg font-semibold text-white">
+                    {selected.name}
+                  </h3>
+                  <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] text-blue-300">
+                    {selected.category}
+                  </span>
+                </div>
+
+                <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                  {selected.description}
+                </p>
+
+                <h4 className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Used in
+                </h4>
+
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {selected.usedIn.map((id) => {
+                    const place: { label: string; href?: string } = PLACES[id];
+                    const isExternal = place.href?.startsWith("http");
+
+                    return (
+                      <li key={id}>
+                        {place.href ? (
+                          <a
+                            href={place.href}
+                            target={isExternal ? "_blank" : undefined}
+                            rel={isExternal ? "noopener noreferrer" : undefined}
+                            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-sky-200 transition hover:border-sky-400/60 hover:text-white"
+                          >
+                            {place.label}
+                            <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex min-h-9 items-center rounded-full border border-slate-800 px-3 py-1.5 text-xs text-slate-300">
+                            {place.label}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-            </div>
-          </div>
+            ) : constellation ? (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-300">
+                  Constellation
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-white">
+                  {constellation.label}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                  {constellation.summary}
+                </p>
+
+                <h4 className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Skills used
+                </h4>
+
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {CONSTELLATION_MEMBERS[constellation.id].map((index) => (
+                    <li key={SKILLS[index].name}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSkill(index)}
+                        className="inline-flex min-h-9 items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-sky-400/60 hover:text-white"
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: SKILLS[index].color }}
+                        />
+                        {SKILLS[index].name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                <a
+                  href={PLACES[constellation.id].href}
+                  className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-sky-300 transition hover:text-white"
+                >
+                  {constellation.id === "internships"
+                    ? "See my experience"
+                    : `See the ${constellation.label} project`}
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Explore my skills
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                  Click any logo to see where I&apos;ve used it. Pick a
+                  constellation to light up the skills behind a project, or
+                  click my portrait to play a quick game.
+                </p>
+              </div>
+            )}
+
+            <dl className="mt-6 space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-400">
+              <div className="flex items-center justify-between gap-3">
+                <dt>Inner ring</dt>
+                <dd className="text-slate-300">Languages</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Outer ring</dt>
+                <dd className="text-slate-300">Frameworks & tools</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>In orbit</dt>
+                <dd className="text-slate-300">
+                  {SKILLS.length} technologies
+                </dd>
+              </div>
+            </dl>
+          </aside>
         </div>
       </div>
 
@@ -1207,57 +1432,221 @@ function drawNightBackground(
   }
 }
 
-function drawOrbitAsteroid(
+/**
+ * Faint text curved along a circle, e.g. "LANGUAGES". Centred on the top or
+ * bottom of the circle, and always upright, reading left to right.
+ */
+function drawRingLabel(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  text: string,
+  fontSize: number,
+  side: "top" | "bottom",
+) {
+  ctx.save();
+  ctx.font = `600 ${fontSize}px system-ui`;
+  ctx.fillStyle = "rgba(147, 197, 253, 0.5)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const letterSpacing = fontSize * 0.3;
+  const widths = Array.from(
+    text,
+    (char) => ctx.measureText(char).width + letterSpacing,
+  );
+  const totalAngle = widths.reduce((sum, w) => sum + w, 0) / radius;
+
+  // Along the top, left to right is clockwise; along the bottom it's the reverse.
+  const direction = side === "top" ? 1 : -1;
+  const middle = side === "top" ? -Math.PI / 2 : Math.PI / 2;
+  let angle = middle - (direction * totalAngle) / 2;
+
+  Array.from(text).forEach((char, i) => {
+    const half = widths[i] / radius / 2;
+    angle += direction * half;
+
+    ctx.save();
+    ctx.translate(
+      centerX + Math.cos(angle) * radius,
+      centerY + Math.sin(angle) * radius,
+    );
+    ctx.rotate(angle + (direction * Math.PI) / 2);
+    ctx.fillText(char, 0, 0);
+    ctx.restore();
+
+    angle += direction * half;
+  });
+
+  ctx.restore();
+}
+
+/**
+ * Glowing, slowly flowing lines joining the skills a project used, linked in
+ * order around the orbit so they form a clean outline rather than a tangle.
+ */
+function drawConstellation(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  members: number[],
+  positions: AsteroidPosition[],
+  time: number,
+) {
+  const points = members
+    .map((index) => positions[index])
+    .filter((point): point is AsteroidPosition => Boolean(point))
+    .sort(
+      (a, b) =>
+        Math.atan2(a.y - centerY, a.x - centerX) -
+        Math.atan2(b.y - centerY, b.x - centerX),
+    );
+
+  if (points.length < 2) return;
+
+  ctx.save();
+  ctx.beginPath();
+  points.forEach((point, i) => {
+    if (i === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  if (points.length > 2) ctx.closePath();
+
+  ctx.lineJoin = "round";
+  ctx.shadowColor = "rgba(56, 189, 248, 0.9)";
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = "rgba(125, 211, 252, 0.85)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 7]);
+  ctx.lineDashOffset = -time * 0.03;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** A skill's logo on a small dark badge, ringed in the skill's colour. */
+function drawSkillLogo(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   radius: number,
-  rotation: number,
-  vertices: { x: number; y: number }[],
+  logo: OrbitLogo | null,
   color: string,
+  isSelected: boolean,
+  isLit: boolean,
+  isDimmed: boolean,
 ) {
+  const alpha = isDimmed ? 0.28 : 1;
+
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(rotation);
+  ctx.globalAlpha = alpha;
 
+  // Badge, glowing in its colour when part of the active constellation.
   ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
 
-  vertices.forEach((vertex, index) => {
-    const vx = vertex.x * radius;
-    const vy = vertex.y * radius;
+  if (isLit) {
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.restore();
+  } else {
+    ctx.fill();
+  }
 
-    if (index === 0) ctx.moveTo(vx, vy);
-    else ctx.lineTo(vx, vy);
-  });
+  const isStrong = isSelected || isLit;
+  ctx.globalAlpha = alpha * (isStrong ? 1 : 0.55);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = isStrong ? 2 : 1.25;
+  ctx.stroke();
+  ctx.globalAlpha = alpha;
 
-  ctx.closePath();
+  // Selection halo.
+  if (isSelected) {
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+    ctx.strokeStyle = "#60A5FA";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
 
-  const gradient = ctx.createRadialGradient(
-    -radius * 0.35,
-    -radius * 0.35,
-    1,
-    0,
-    0,
-    radius,
-  );
+  // Logo, scaled from its 24x24 box to fit inside the badge.
+  if (logo) {
+    const box = radius * 1.15;
+    const scale = box / 24;
 
-  gradient.addColorStop(0, "#E5D5B8");
-  gradient.addColorStop(0.55, color);
-  gradient.addColorStop(1, "#332719");
+    ctx.translate(-box / 2, -box / 2);
+    ctx.scale(scale, scale);
 
-  ctx.fillStyle = gradient;
+    if (logo.kind === "fill") {
+      ctx.fillStyle = color;
+      for (const path of logo.paths) ctx.fill(path);
+    } else {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (const path of logo.paths) ctx.stroke(path);
+    }
+  }
+
+  ctx.restore();
+}
+
+/** Her cartoon in the middle of the orbit; the old drawn character until it loads. */
+function drawCenterPortrait(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  time: number,
+  image: HTMLImageElement | null,
+) {
+  if (!image || !image.complete || image.naturalWidth === 0) {
+    drawDeveloperCharacter(ctx, x, y, radius * 0.55, time);
+    return;
+  }
+
+  const bob = Math.sin(time * 0.002) * radius * 0.03;
+  const pulse = 1 + Math.sin(time * 0.003) * 0.025;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  // Soft blue glow, kept inside the inner ring.
+  const glow = ctx.createRadialGradient(0, 0, radius * 0.9, 0, 0, radius * 1.4);
+  glow.addColorStop(0, "rgba(59, 130, 246, 0.35)");
+  glow.addColorStop(1, "rgba(59, 130, 246, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 1.4, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "rgba(255,255,255,0.22)";
-  ctx.lineWidth = 1;
+  // Portrait, cropped to a circle.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
+  ctx.restore();
+
+  ctx.strokeStyle = "rgba(96, 165, 250, 0.95)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Small crater details.
-  ctx.fillStyle = "rgba(30, 25, 20, 0.3)";
+  // Pulsing ring hints that she can be clicked to start the game.
+  ctx.strokeStyle = "rgba(96, 165, 250, 0.45)";
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.arc(-radius * 0.25, radius * 0.15, radius * 0.16, 0, Math.PI * 2);
-  ctx.arc(radius * 0.3, -radius * 0.2, radius * 0.11, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.arc(0, 0, radius * 1.1 * pulse, 0, Math.PI * 2);
+  ctx.stroke();
 
   ctx.restore();
 }
