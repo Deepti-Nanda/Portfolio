@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Code, Briefcase, GraduationCap, Award } from "lucide-react";
+import { Briefcase } from "lucide-react";
 
 interface ExperienceItem {
   id: string;
@@ -10,99 +10,36 @@ interface ExperienceItem {
   period: string;
   location: string;
   description: string[];
-  type: "work" | "education" | "project" | "achievement";
-  icon: React.ReactNode;
 }
 
 const experiences: ExperienceItem[] = [
   {
-    id: "1",
-    role: "Full-Stack Developer Intern",
-    company: "Tech Company",
-    period: "Jun 2025 - Present",
-    location: "Remote",
+    id: "experience-1",
+    role: "Data Analyst Intern",
+    company: "Edunet Foundation – VOIS",
+    period: "Aug 2026 – Sep 2026",
+    location: "Virtual",
     description: [
-      "Building scalable web applications using React, Node.js, and PostgreSQL",
-      "Implementing RESTful APIs and integrating third-party services",
-      "Collaborating with cross-functional teams in an agile environment",
-      "Optimizing database queries and improving application performance by 40%",
+      "Worked with Python-based data analysis and machine learning workflows.",
+      "Applied data processing and analysis techniques to work with datasets.",
+      "Used Python libraries including NumPy, Pandas, Matplotlib, and Scikit-learn.",
+      "Explored supervised learning models and evaluation metrics through practical work.",
     ],
-    type: "work",
-    icon: <Briefcase className="w-5 h-5" />,
   },
   {
-    id: "2",
-    role: "Open Source Contributor",
-    company: "Various Projects",
-    period: "Jan 2025 - Present",
-    location: "Remote",
+    id: "experience-2",
+    role: "Machine Learning Intern",
+    company: "YHILLS",
+    period: "Apr 2025 – Jun 2025",
+    location: "Virtual",
     description: [
-      "Contributed to OpenSource Radar - a tool for finding good first issues",
-      "Built Raksha - offline AI health guardian for disaster scenarios",
-      "Regular contributor to React and Node.js ecosystem packages",
-      "Mentoring newcomers in open source through GitHub discussions",
+      "Developed machine learning projects using real-world datasets.",
+      "Built a Student Performance Predictor using supervised learning techniques.",
+      "Implemented Iris Flower Classification as a practical machine learning project.",
+      "Worked with Python and libraries including NumPy, Pandas, Matplotlib, and Scikit-learn.",
     ],
-    type: "project",
-    icon: <Code className="w-5 h-5" />,
-  },
-  {
-    id: "3",
-    role: "BCA - Bachelor of Computer Applications",
-    company: "Sarala Birla University",
-    period: "2024 - 2027 (Expected)",
-    location: "Ranchi, Jharkhand, India",
-    description: [
-      "Coursework: Data Structures, Algorithms, Database Systems, Web Development",
-      "Specialization: Full-Stack Development and Machine Learning",
-      "CGPA: 8.5/10 | Dean's List: 2024, 2025",
-      "Active member of Coding Club and AI Research Group",
-    ],
-    type: "education",
-    icon: <GraduationCap className="w-5 h-5" />,
-  },
-  {
-    id: "4",
-    role: "LeetCode Top 5% Contest Ranking",
-    company: "LeetCode",
-    period: "2024",
-    location: "Global",
-    description: [
-      "Solved 300+ algorithmic problems across arrays, trees, graphs, DP",
-      "Consistent participant in weekly and biweekly contests",
-      "Strong foundation in Data Structures & Algorithms",
-      "Preferred languages: Python, JavaScript, C++",
-    ],
-    type: "achievement",
-    icon: <Award className="w-5 h-5" />,
   },
 ];
-
-const typeStyles = {
-  work: {
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
-    iconBg: "bg-blue-500/20",
-  },
-  project: {
-    color: "text-green-400",
-    bg: "bg-green-500/10",
-    border: "border-green-500/20",
-    iconBg: "bg-green-500/20",
-  },
-  education: {
-    color: "text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "border-purple-500/20",
-    iconBg: "bg-purple-500/20",
-  },
-  achievement: {
-    color: "text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/20",
-    iconBg: "bg-amber-500/20",
-  },
-};
 
 export function Experience() {
   const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
@@ -119,9 +56,11 @@ export function Experience() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            const id = entry.target.id;
+
             setVisibleItems((prev) => {
-              if (prev.has(entry.target.id)) return prev;
-              return new Set([...prev, entry.target.id]);
+              if (prev.has(id)) return prev;
+              return new Set([...prev, id]);
             });
 
             observer.unobserve(entry.target);
@@ -134,7 +73,7 @@ export function Experience() {
       },
     );
 
-    elements.forEach((el) => observer.observe(el));
+    elements.forEach((element) => observer.observe(element));
 
     return () => observer.disconnect();
   }, []);
@@ -154,8 +93,7 @@ export function Experience() {
         </h2>
 
         <p className="text-[var(--muted)] text-center max-w-2xl mx-auto mb-8 sm:mb-12 text-sm sm:text-base leading-relaxed">
-          My journey through education, open source, and professional
-          development.
+          My journey through professional development.
         </p>
 
         <div className="timeline min-w-0">
@@ -180,10 +118,10 @@ export function Experience() {
               <div className="timeline-content group min-w-0">
                 <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                   <div
-                    className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${typeStyles[exp.type].iconBg} ${typeStyles[exp.type].color}`}
+                    className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-[var(--accent)]/10 text-[var(--accent)]"
                     aria-hidden="true"
                   >
-                    {exp.icon}
+                    <Briefcase className="w-5 h-5" />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -192,10 +130,8 @@ export function Experience() {
                         {exp.role}
                       </h3>
 
-                      <span
-                        className={`inline-flex items-center text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ${typeStyles[exp.type].bg} ${typeStyles[exp.type].color} ${typeStyles[exp.type].border}`}
-                      >
-                        {exp.type.charAt(0).toUpperCase() + exp.type.slice(1)}
+                      <span className="inline-flex items-center text-[10px] sm:text-xs font-medium px-2 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
+                        Internship
                       </span>
                     </div>
 
