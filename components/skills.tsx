@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { PointerEvent } from "react";
 import { useResume } from "@/components/resume-context";
 import {
@@ -143,6 +144,8 @@ interface GameAssets {
     baseY: number;
     radius: number;
     phase: number;
+    /** Animation timestamp of the last hit, used for the wobble/flash reaction. */
+    hitAt: number;
   };
   projectiles: Projectile[];
   particles: GameParticle[];
@@ -174,6 +177,78 @@ const INITIAL_GAME: GameState = {
   result: null,
 };
 
+const TARGET_IMAGE_SRC = "/game/deepti-target.jpg";
+const HIT_REACTION_MS = 450;
+
+// Slingshot game tuning.
+const SLING_X_RATIO = 0.16;
+const SLING_Y_RATIO = 0.65;
+const TARGET_X_RATIO = 0.78;
+const TARGET_Y_RATIO = 0.43;
+const GRAVITY = 0.32;
+const MAX_DRAG = 85;
+const MIN_DRAG = 10;
+const MAX_POWER = 17;
+const GRAB_RADIUS = 70;
+const HIT_PADDING = 6;
+const HITS_TO_WIN = 2;
+
+type Point = { x: number; y: number };
+
+function getSlingPosition(width: number, height: number): Point {
+  return { x: Math.max(45, width * SLING_X_RATIO), y: height * SLING_Y_RATIO };
+}
+
+/** Big enough for her face to read clearly, while staying a fair target. */
+function getTargetRadius(width: number, height: number) {
+  return Math.max(28, Math.min(46, Math.min(width, height) * 0.12));
+}
+
+function getCharacterRadius(size: number) {
+  return Math.max(17, size * 0.075);
+}
+
+function clampDrag(sling: Point, x: number, y: number): Point {
+  const dx = x - sling.x;
+  const dy = y - sling.y;
+  const distance = Math.hypot(dx, dy);
+  const scale = distance > MAX_DRAG ? MAX_DRAG / distance : 1;
+
+  return { x: sling.x + dx * scale, y: sling.y + dy * scale };
+}
+
+function getLaunchVelocity(sling: Point, drag: Point) {
+  const dx = sling.x - drag.x;
+  const dy = sling.y - drag.y;
+  const distance = Math.hypot(dx, dy);
+
+  if (distance <= MIN_DRAG) return null;
+
+  const power = Math.min(distance / MAX_DRAG, 1) * MAX_POWER;
+
+  return { vx: (dx / distance) * power, vy: (dy / distance) * power };
+}
+
+function createGameAssets(width: number, height: number): GameAssets {
+  const sling = getSlingPosition(width, height);
+
+  return {
+    target: {
+      x: width * TARGET_X_RATIO,
+      y: height * TARGET_Y_RATIO,
+      baseX: width * TARGET_X_RATIO,
+      baseY: height * TARGET_Y_RATIO,
+      radius: getTargetRadius(width, height),
+      phase: 0,
+      hitAt: -Infinity,
+    },
+    projectiles: [],
+    particles: [],
+    chest: null,
+    drag: { x: sling.x, y: sling.y, active: false },
+  };
+}
+
 const COLORS = [
   "#8B7355",
   "#A08A6B",
@@ -190,14 +265,15 @@ const COLORS = [
 export function Skills() {
   const { openResume } = useResume();
   const orbitCanvasRef = useRef<HTMLCanvasElement>(null);
-  const orbitAnimationRef = useRef<number | null>(null);
   const orbitDataRef = useRef<OrbitAsteroid[]>([]);
   const asteroidPositionsRef = useRef<AsteroidPosition[]>([]);
+  const selectedSkillRef = useRef<number | null>(null);
 
   const gameCanvasRef = useRef<HTMLCanvasElement>(null);
-  const gameAnimationRef = useRef<number | null>(null);
   const gameAssetsRef = useRef<GameAssets | null>(null);
   const gameStateRef = useRef<GameState>(INITIAL_GAME);
+  const targetImageRef = useRef<HTMLImageElement | null>(null);
+  const chestTimeoutRef = useRef<number | null>(null);
 
   const [selectedSkill, setSelectedSkill] = useState<number | null>(null);
   const [gameState, setGameState] = useState<GameState>(INITIAL_GAME);
@@ -206,6 +282,53 @@ export function Skills() {
     gameStateRef.current = next;
     setGameState(next);
   }, []);
+
+  const clearChestTimeout = useCallback(() => {
+    if (chestTimeoutRef.current !== null) {
+      window.clearTimeout(chestTimeoutRef.current);
+      chestTimeoutRef.current = null;
+    }
+  }, []);
+
+  const openGame = () => {
+    clearChestTimeout();
+    // The game loop creates fresh assets once the canvas has a size.
+    gameAssetsRef.current = null;
+    updateGame({ ...INITIAL_GAME, isOpen: true });
+  };
+
+  const closeGame = useCallback(() => {
+    clearChestTimeout();
+    gameAssetsRef.current = null;
+    updateGame(INITIAL_GAME);
+  }, [clearChestTimeout, updateGame]);
+
+  const resetGame = () => {
+    clearChestTimeout();
+
+    const rect = gameCanvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      gameAssetsRef.current = createGameAssets(rect.width, rect.height);
+    }
+
+    updateGame({ ...INITIAL_GAME, isOpen: true });
+  };
+
+  // Let the orbit loop read the selection without restarting the animation.
+  useEffect(() => {
+    selectedSkillRef.current = selectedSkill;
+  }, [selectedSkill]);
+
+  // Preload the cartoon target so it is ready before the game opens.
+  useEffect(() => {
+    const image = new window.Image();
+    image.decoding = "async";
+    image.src = TARGET_IMAGE_SRC;
+    targetImageRef.current = image;
+  }, []);
+
+  // Cancel a pending "open resume" timer if the section unmounts.
+  useEffect(() => clearChestTimeout, [clearChestTimeout]);
 
   // Create evenly distributed asteroid data.
   useEffect(() => {
@@ -234,7 +357,8 @@ export function Skills() {
     });
   }, []);
 
-  // Orbit animation.
+  // Orbit animation. Starts once, and skips drawing while the orbit is
+  // scrolled off-screen or covered by the game.
   useEffect(() => {
     const canvas = orbitCanvasRef.current;
     if (!canvas) return;
@@ -242,7 +366,11 @@ export function Skills() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let width = 0;
+    let height = 0;
+    let isOnScreen = true;
     let lastTime = 0;
+    let frameId: number | null = null;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -250,54 +378,59 @@ export function Skills() {
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     resize();
 
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      isOnScreen = entry.isIntersecting;
+    });
+    visibilityObserver.observe(canvas);
 
     const animate = (time: number) => {
-      const dt = lastTime ? Math.min(time - lastTime, 40) : 16;
-      lastTime = time;
+      frameId = requestAnimationFrame(animate);
 
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
-
-      if (!width || !height) {
-        orbitAnimationRef.current = requestAnimationFrame(animate);
+      if (!isOnScreen || !width || !height || gameStateRef.current.isOpen) {
+        // Reset the clock so asteroids don't jump when drawing resumes.
+        lastTime = 0;
         return;
       }
+
+      const dt = lastTime ? Math.min(time - lastTime, 40) : 16;
+      lastTime = time;
 
       const size = Math.min(width, height);
       const centerX = width / 2;
       const centerY = height / 2;
 
-      const scale = Math.min(size / 460, 1.25);
       const innerOrbit = size * 0.25;
       const outerOrbit = size * 0.39;
-      const characterRadius = Math.max(17, size * 0.075);
+      const characterRadius = getCharacterRadius(size);
+      const asteroidRadius = Math.max(8, Math.min(16, size * 0.034));
+      const selectedIndex = selectedSkillRef.current;
 
       ctx.clearRect(0, 0, width, height);
       drawNightBackground(ctx, width, height, time);
 
       // Orbit paths.
+      ctx.strokeStyle = "rgba(147, 197, 253, 0.13)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 7]);
       [innerOrbit, outerOrbit].forEach((radius) => {
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(147, 197, 253, 0.13)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 7]);
         ctx.stroke();
-        ctx.setLineDash([]);
       });
-
-      asteroidPositionsRef.current = [];
+      ctx.setLineDash([]);
 
       orbitDataRef.current.forEach((asteroid, index) => {
         asteroid.angle += asteroid.speed * dt;
@@ -308,28 +441,26 @@ export function Skills() {
         const x = centerX + Math.cos(asteroid.angle) * orbitRadius;
         const y = centerY + Math.sin(asteroid.angle) * orbitRadius;
 
-        const radius = Math.max(8, Math.min(16, size * 0.034));
-
-        asteroid.radius = radius;
+        asteroid.radius = asteroidRadius;
 
         asteroidPositionsRef.current[index] = {
           x,
           y,
-          radius,
+          radius: asteroidRadius,
         };
 
         drawOrbitAsteroid(
           ctx,
           x,
           y,
-          radius,
+          asteroidRadius,
           asteroid.rotation,
           asteroid.vertices,
           COLORS[index],
         );
 
         // Skill label.
-        const labelY = y + radius + Math.max(10, size * 0.025);
+        const labelY = y + asteroidRadius + Math.max(10, size * 0.025);
 
         ctx.save();
         ctx.textAlign = "center";
@@ -348,9 +479,9 @@ export function Skills() {
         ctx.restore();
 
         // Highlight selected asteroid.
-        if (selectedSkill === index) {
+        if (selectedIndex === index) {
           ctx.beginPath();
-          ctx.arc(x, y, radius + 5, 0, Math.PI * 2);
+          ctx.arc(x, y, asteroidRadius + 5, 0, Math.PI * 2);
           ctx.strokeStyle = "#60A5FA";
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -358,21 +489,19 @@ export function Skills() {
       });
 
       drawDeveloperCharacter(ctx, centerX, centerY, characterRadius, time);
-
-      orbitAnimationRef.current = requestAnimationFrame(animate);
     };
 
-    orbitAnimationRef.current = requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
 
     return () => {
-      observer.disconnect();
+      resizeObserver.disconnect();
+      visibilityObserver.disconnect();
 
-      if (orbitAnimationRef.current !== null) {
-        cancelAnimationFrame(orbitAnimationRef.current);
-        orbitAnimationRef.current = null;
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
       }
     };
-  }, [selectedSkill]);
+  }, []);
 
   // Handle orbit clicks: asteroids show details; only the center character opens the game.
   const handleOrbitClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -385,7 +514,9 @@ export function Skills() {
 
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const characterRadius = Math.min(rect.width, rect.height) * 0.075;
+    const characterRadius = getCharacterRadius(
+      Math.min(rect.width, rect.height),
+    );
 
     const centerDistance = Math.hypot(x - centerX, y - centerY);
 
@@ -409,66 +540,24 @@ export function Skills() {
     }
   };
 
-  // Initialize the slingshot game.
-  const initGame = useCallback(() => {
-    const canvas = gameCanvasRef.current;
-    if (!canvas) return;
+  // Close the game with Escape and stop the page scrolling behind it.
+  useEffect(() => {
+    if (!gameState.isOpen) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-    if (!width || !height) return;
-
-    const slingX = Math.max(45, width * 0.16);
-    const slingY = height * 0.65;
-    const targetRadius = Math.max(20, Math.min(34, height * 0.09));
-
-    gameAssetsRef.current = {
-      target: {
-        x: width * 0.78,
-        y: height * 0.43,
-        baseX: width * 0.78,
-        baseY: height * 0.43,
-        radius: targetRadius,
-        phase: 0,
-      },
-      projectiles: [],
-      particles: [],
-      chest: null,
-      drag: {
-        x: slingX,
-        y: slingY,
-        active: false,
-      },
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeGame();
     };
 
-    updateGame({
-      ...INITIAL_GAME,
-      isOpen: true,
-    });
-  }, [updateGame]);
+    window.addEventListener("keydown", handleKeyDown);
 
-  const openGame = () => {
-    updateGame({
-      ...INITIAL_GAME,
-      isOpen: true,
-    });
-  };
-
-  const closeGame = () => {
-    updateGame(INITIAL_GAME);
-    gameAssetsRef.current = null;
-
-    if (gameAnimationRef.current !== null) {
-      cancelAnimationFrame(gameAnimationRef.current);
-      gameAnimationRef.current = null;
-    }
-  };
-
-  const resetGame = () => {
-    initGame();
-  };
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [gameState.isOpen, closeGame]);
 
   // Game animation.
   useEffect(() => {
@@ -480,135 +569,161 @@ export function Skills() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let width = 0;
+    let height = 0;
+    let lastTime = 0;
+    let frameId: number | null = null;
+
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
 
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      canvas.width = Math.round(rect.width * dpr);
-      canvas.height = Math.round(rect.height * dpr);
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     resize();
 
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-
-    initGame();
-
-    let lastTime = 0;
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
 
     const animate = (time: number) => {
+      frameId = requestAnimationFrame(animate);
+
       const dt = lastTime ? Math.min(time - lastTime, 40) : 16;
       lastTime = time;
 
-      const assets = gameAssetsRef.current;
-      const state = gameStateRef.current;
+      if (!width || !height) return;
 
-      if (!assets) {
-        gameAnimationRef.current = requestAnimationFrame(animate);
-        return;
+      if (!gameAssetsRef.current) {
+        gameAssetsRef.current = createGameAssets(width, height);
       }
 
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
+      const assets = gameAssetsRef.current;
+      const state = gameStateRef.current;
+      const step = dt / 16;
+      const sling = getSlingPosition(width, height);
+      const target = assets.target;
 
-      ctx.clearRect(0, 0, width, height);
-      drawNightBackground(ctx, width, height, time);
+      // Follow the canvas size, so a resize or phone rotation never strands
+      // the target off-screen.
+      target.radius = getTargetRadius(width, height);
+      target.baseX = width * TARGET_X_RATIO;
+      target.baseY = height * TARGET_Y_RATIO;
 
       if (!state.isPaused && !state.result) {
-        assets.target.phase += dt * 0.002;
-        assets.target.x =
-          assets.target.baseX + Math.cos(assets.target.phase) * 18;
-        assets.target.y =
-          assets.target.baseY + Math.sin(assets.target.phase) * 24;
+        target.phase += dt * 0.002;
+        target.x = target.baseX + Math.cos(target.phase) * 18;
+        target.y = target.baseY + Math.sin(target.phase) * 24;
 
-        assets.projectiles.forEach((projectile) => {
-          if (!projectile.active) return;
-
-          projectile.vy += 0.32 * (dt / 16);
-          projectile.x += projectile.vx * (dt / 16);
-          projectile.y += projectile.vy * (dt / 16);
+        for (const projectile of assets.projectiles) {
+          projectile.vy += GRAVITY * step;
+          projectile.x += projectile.vx * step;
+          projectile.y += projectile.vy * step;
 
           const distance = Math.hypot(
-            projectile.x - assets.target.x,
-            projectile.y - assets.target.y,
+            projectile.x - target.x,
+            projectile.y - target.y,
           );
 
-          if (distance < assets.target.radius + 10) {
+          if (distance < target.radius + HIT_PADDING) {
             projectile.active = false;
+            target.hitAt = time;
 
-            const hits = gameStateRef.current.hits + 1;
-            const won = hits >= 2;
+            const latest = gameStateRef.current;
+            const hits = latest.hits + 1;
+            const won = hits >= HITS_TO_WIN;
 
             updateGame({
-              ...gameStateRef.current,
+              ...latest,
               hits,
               result: won ? "won" : null,
             });
 
             if (won) {
               assets.chest = {
-                x: assets.target.x,
-                y: assets.target.y - 30,
+                x: target.x,
+                y: target.y - 30,
                 state: "falling",
               };
             }
 
             createGameParticles(assets, projectile.x, projectile.y);
-          }
-
-          if (
+          } else if (
             projectile.x > width + 40 ||
             projectile.y > height + 40 ||
             projectile.x < -40
           ) {
             projectile.active = false;
           }
-        });
+        }
+
+        // Drop finished shots instead of keeping them around forever.
+        assets.projectiles = assets.projectiles.filter((p) => p.active);
       }
 
       if (!state.isPaused && assets.chest) {
-        if (assets.chest.state === "falling") {
-          assets.chest.y += 6 * (dt / 16);
+        const groundY = height - 65;
+        assets.chest.x = Math.min(assets.chest.x, width - 40);
 
-          if (assets.chest.y >= height - 65) {
-            assets.chest.y = height - 65;
+        if (assets.chest.state === "falling") {
+          assets.chest.y += 6 * step;
+
+          if (assets.chest.y >= groundY) {
+            assets.chest.y = groundY;
             assets.chest.state = "landed";
             createGameParticles(assets, assets.chest.x, assets.chest.y);
           }
+        } else {
+          assets.chest.y = groundY;
         }
       }
 
-      if (!state.isPaused) {
-        assets.particles = assets.particles
-          .map((particle) => ({
-            ...particle,
-            x: particle.x + particle.vx * (dt / 16),
-            y: particle.y + particle.vy * (dt / 16),
-            life: particle.life - 1,
-          }))
-          .filter((particle) => particle.life > 0);
+      // Update particles in place to avoid allocating new objects every frame.
+      if (!state.isPaused && assets.particles.length) {
+        let alive = 0;
+
+        for (const particle of assets.particles) {
+          particle.x += particle.vx * step;
+          particle.y += particle.vy * step;
+          particle.life -= step;
+
+          if (particle.life > 0) {
+            assets.particles[alive++] = particle;
+          }
+        }
+
+        assets.particles.length = alive;
       }
 
-      drawSlingshot(ctx, width * 0.16, height * 0.65, assets.drag);
+      ctx.clearRect(0, 0, width, height);
+      drawNightBackground(ctx, width, height, time);
+
+      drawSlingshot(ctx, sling.x, sling.y, assets.drag);
+
+      if (assets.drag.active) {
+        drawAimPreview(ctx, sling, assets.drag);
+      }
 
       drawGameTarget(
         ctx,
-        assets.target.x,
-        assets.target.y,
-        assets.target.radius,
+        target.x,
+        target.y,
+        target.radius,
         time,
+        targetImageRef.current,
+        target.hitAt,
       );
 
-      assets.projectiles.forEach((projectile) => {
-        if (!projectile.active) return;
+      for (const projectile of assets.projectiles) {
         drawGameAsteroid(ctx, projectile.x, projectile.y, 10);
-      });
+      }
 
       if (assets.chest) {
         drawGameChest(
@@ -620,14 +735,18 @@ export function Skills() {
         );
       }
 
-      assets.particles.forEach((particle) => {
-        ctx.globalAlpha = Math.max(0, particle.life / 35);
+      if (assets.particles.length) {
         ctx.fillStyle = "#FBBF24";
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
-        ctx.fill();
+
+        for (const particle of assets.particles) {
+          ctx.globalAlpha = Math.max(0, particle.life / 35);
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
         ctx.globalAlpha = 1;
-      });
+      }
 
       drawGameScore(ctx, width, gameStateRef.current);
 
@@ -635,8 +754,8 @@ export function Skills() {
 
       if (
         latest.shots === 0 &&
-        assets.projectiles.every((projectile) => !projectile.active) &&
-        latest.hits < 2 &&
+        assets.projectiles.length === 0 &&
+        latest.hits < HITS_TO_WIN &&
         !latest.result
       ) {
         updateGame({
@@ -644,21 +763,29 @@ export function Skills() {
           result: "lost",
         });
       }
-
-      gameAnimationRef.current = requestAnimationFrame(animate);
     };
 
-    gameAnimationRef.current = requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
 
     return () => {
-      observer.disconnect();
+      resizeObserver.disconnect();
 
-      if (gameAnimationRef.current !== null) {
-        cancelAnimationFrame(gameAnimationRef.current);
-        gameAnimationRef.current = null;
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
       }
     };
-  }, [gameState.isOpen, initGame, updateGame]);
+  }, [gameState.isOpen, updateGame]);
+
+  const getGamePoint = (event: PointerEvent<HTMLCanvasElement>) => {
+    const rect = gameCanvasRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      sling: getSlingPosition(rect.width, rect.height),
+    };
+  };
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     const assets = gameAssetsRef.current;
@@ -669,26 +796,22 @@ export function Skills() {
       state.isPaused ||
       state.result ||
       state.shots === 0 ||
-      assets.projectiles.some((projectile) => projectile.active)
+      assets.projectiles.length > 0
     ) {
       return;
     }
 
-    const rect = gameCanvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const point = getGamePoint(event);
+    if (!point) return;
 
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const slingX = rect.width * 0.16;
-    const slingY = rect.height * 0.65;
-
-    if (Math.hypot(x - slingX, y - slingY) < 65) {
+    if (
+      Math.hypot(point.x - point.sling.x, point.y - point.sling.y) <
+      GRAB_RADIUS
+    ) {
       event.currentTarget.setPointerCapture(event.pointerId);
 
       assets.drag = {
-        x,
-        y,
+        ...clampDrag(point.sling, point.x, point.y),
         active: true,
       };
     }
@@ -698,24 +821,12 @@ export function Skills() {
     const assets = gameAssetsRef.current;
     if (!assets?.drag.active) return;
 
-    const rect = gameCanvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const point = getGamePoint(event);
+    if (!point) return;
 
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const slingX = rect.width * 0.16;
-    const slingY = rect.height * 0.65;
-
-    const dx = x - slingX;
-    const dy = y - slingY;
-    const distance = Math.hypot(dx, dy);
-    const maxDrag = 85;
-
-    const scale = distance > maxDrag ? maxDrag / distance : 1;
-
-    assets.drag.x = slingX + dx * scale;
-    assets.drag.y = slingY + dy * scale;
+    const clamped = clampDrag(point.sling, point.x, point.y);
+    assets.drag.x = clamped.x;
+    assets.drag.y = clamped.y;
   };
 
   const handlePointerUp = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -726,24 +837,17 @@ export function Skills() {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    const rect = gameCanvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    const point = getGamePoint(event);
+    if (!point) return;
 
-    const slingX = rect.width * 0.16;
-    const slingY = rect.height * 0.65;
+    const velocity = getLaunchVelocity(point.sling, assets.drag);
 
-    const dx = slingX - assets.drag.x;
-    const dy = slingY - assets.drag.y;
-    const distance = Math.hypot(dx, dy);
-
-    if (distance > 10) {
-      const power = Math.min(distance / 85, 1) * 17;
-
+    if (velocity) {
       assets.projectiles.push({
-        x: slingX,
-        y: slingY,
-        vx: (dx / distance) * power,
-        vy: (dy / distance) * power,
+        x: point.sling.x,
+        y: point.sling.y,
+        vx: velocity.vx,
+        vy: velocity.vy,
         active: true,
       });
 
@@ -754,8 +858,8 @@ export function Skills() {
     }
 
     assets.drag.active = false;
-    assets.drag.x = slingX;
-    assets.drag.y = slingY;
+    assets.drag.x = point.sling.x;
+    assets.drag.y = point.sling.y;
   };
 
   const handleChestClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -771,7 +875,9 @@ export function Skills() {
     if (Math.hypot(x - assets.chest.x, y - assets.chest.y) < 45) {
       assets.chest.state = "open";
 
-      window.setTimeout(() => {
+      clearChestTimeout();
+      chestTimeoutRef.current = window.setTimeout(() => {
+        chestTimeoutRef.current = null;
         closeGame();
         openResume();
       }, 650);
@@ -945,118 +1051,128 @@ export function Skills() {
         </div>
       </div>
 
-      {/* Slingshot game */}
-      {gameState.isOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
-          onClick={closeGame}
-        >
+      {/* Slingshot game. Rendered on <body> so the section's reveal
+          transform can't trap it underneath the fixed navbar. */}
+      {gameState.isOpen &&
+        createPortal(
           <div
-            className="flex max-h-[92dvh] min-h-[360px] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-[#050510] shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
+            onClick={closeGame}
           >
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-3 py-3 sm:px-5">
-              <div>
-                <h3 className="text-sm font-bold text-white sm:text-base">
-                  Asteroid Slingshot
-                </h3>
-                <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
-                  Hit the moving target twice to unlock the chest.
-                </p>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  onClick={() =>
-                    updateGame({
-                      ...gameStateRef.current,
-                      isPaused: !gameStateRef.current.isPaused,
-                    })
-                  }
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                  aria-label={gameState.isPaused ? "Resume game" : "Pause game"}
-                >
-                  {gameState.isPaused ? (
-                    <Play className="h-4 w-4" />
-                  ) : (
-                    <Pause className="h-4 w-4" />
-                  )}
-                </button>
-
-                <button
-                  onClick={resetGame}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                  aria-label="Restart game"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-
-                <button
-                  onClick={closeGame}
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
-                  aria-label="Close game"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="relative min-h-0 flex-1 touch-none">
-              <canvas
-                ref={gameCanvasRef}
-                className="block h-full min-h-[280px] w-full cursor-crosshair"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                onClick={handleChestClick}
-              />
-
-              {gameState.isPaused && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                  <span className="text-xl font-bold tracking-widest text-white">
-                    PAUSED
-                  </span>
-                </div>
-              )}
-
-              {gameState.result === "won" && (
-                <div className="pointer-events-none absolute left-1/2 top-3 z-10 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-xl border border-emerald-400/30 bg-slate-950/90 p-3 text-center shadow-xl sm:p-4">
-                  <CheckCircle className="mx-auto h-6 w-6 text-emerald-400" />
-                  <h4 className="mt-1 font-bold text-white">Target Hit! 2/2</h4>
-                  <p className="mt-1 text-xs text-slate-300">
-                    The chest is on the ground. Tap it to reveal your resume.
+            <div
+              className="flex max-h-[92dvh] min-h-[360px] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-[#050510] shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="slingshot-title"
+            >
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-3 py-3 sm:px-5">
+                <div>
+                  <h3
+                    id="slingshot-title"
+                    className="text-sm font-bold text-white sm:text-base"
+                  >
+                    Asteroid Slingshot
+                  </h3>
+                  <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
+                    Hit the moving target twice to unlock the chest.
                   </p>
                 </div>
-              )}
 
-              {gameState.result === "lost" && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 p-4 text-center">
-                  <AlertCircle className="h-12 w-12 text-rose-400" />
-                  <h4 className="mt-3 text-xl font-bold text-white">
-                    Try Again!
-                  </h4>
-                  <p className="mt-2 text-sm text-slate-300">
-                    You scored {gameState.hits}/2 hits.
-                  </p>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() =>
+                      updateGame({
+                        ...gameStateRef.current,
+                        isPaused: !gameStateRef.current.isPaused,
+                      })
+                    }
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    aria-label={gameState.isPaused ? "Resume game" : "Pause game"}
+                  >
+                    {gameState.isPaused ? (
+                      <Play className="h-4 w-4" />
+                    ) : (
+                      <Pause className="h-4 w-4" />
+                    )}
+                  </button>
+
                   <button
                     onClick={resetGame}
-                    className="mt-5 flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    aria-label="Restart game"
                   >
                     <RotateCcw className="h-4 w-4" />
-                    Play Again
+                  </button>
+
+                  <button
+                    onClick={closeGame}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                    aria-label="Close game"
+                  >
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="shrink-0 border-t border-slate-800 bg-slate-950 px-3 py-2 text-center text-[10px] text-slate-400 sm:text-xs">
-              Drag the asteroid backwards from the slingshot and release to
-              launch it.
+              <div className="relative min-h-0 flex-1 touch-none">
+                <canvas
+                  ref={gameCanvasRef}
+                  className="block h-full min-h-[280px] w-full cursor-crosshair"
+                  aria-label="Slingshot game. Drag back from the slingshot and release to hit the moving cartoon target."
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  onClick={handleChestClick}
+                />
+
+                {gameState.isPaused && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                    <span className="text-xl font-bold tracking-widest text-white">
+                      PAUSED
+                    </span>
+                  </div>
+                )}
+
+                {gameState.result === "won" && (
+                  <div className="pointer-events-none absolute left-1/2 top-3 z-10 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-xl border border-emerald-400/30 bg-slate-950/90 p-3 text-center shadow-xl sm:p-4">
+                    <CheckCircle className="mx-auto h-6 w-6 text-emerald-400" />
+                    <h4 className="mt-1 font-bold text-white">Target Hit! 2/2</h4>
+                    <p className="mt-1 text-xs text-slate-300">
+                      The chest is on the ground. Tap it to reveal your resume.
+                    </p>
+                  </div>
+                )}
+
+                {gameState.result === "lost" && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 p-4 text-center">
+                    <AlertCircle className="h-12 w-12 text-rose-400" />
+                    <h4 className="mt-3 text-xl font-bold text-white">
+                      Try Again!
+                    </h4>
+                    <p className="mt-2 text-sm text-slate-300">
+                      You scored {gameState.hits}/2 hits.
+                    </p>
+                    <button
+                      onClick={resetGame}
+                      className="mt-5 flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Play Again
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 border-t border-slate-800 bg-slate-950 px-3 py-2 text-center text-[10px] text-slate-400 sm:text-xs">
+                Drag the asteroid backwards from the slingshot and release to
+                launch it. Press Esc to close.
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </section>
   );
 }
@@ -1260,16 +1376,44 @@ function drawSlingshot(
 
   drawGameAsteroid(ctx, drag.active ? drag.x : x, drag.active ? drag.y : y, 10);
 
-  if (drag.active) {
-    ctx.setLineDash([4, 5]);
-    ctx.strokeStyle = "rgba(255,255,255,0.45)";
-    ctx.lineWidth = 1.5;
+  ctx.restore();
+}
 
+/**
+ * Dotted preview of the first part of the shot's real (curved) path.
+ * Only the start is shown, so aiming still takes some skill.
+ */
+function drawAimPreview(
+  ctx: CanvasRenderingContext2D,
+  sling: Point,
+  drag: Point,
+) {
+  const velocity = getLaunchVelocity(sling, drag);
+  if (!velocity) return;
+
+  const { vx } = velocity;
+  let { vy } = velocity;
+  let x = sling.x;
+  let y = sling.y;
+
+  const dots = 6;
+  const framesPerDot = 3;
+
+  ctx.save();
+  ctx.fillStyle = "#FFFFFF";
+
+  for (let i = 1; i <= dots; i++) {
+    // Same integration order as the game loop, so the dots match the shot.
+    for (let frame = 0; frame < framesPerDot; frame++) {
+      vy += GRAVITY;
+      x += vx;
+      y += vy;
+    }
+
+    ctx.globalAlpha = 0.6 * (1 - i / (dots + 1));
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + (x - drag.x) * 2, y + (y - drag.y) * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();
@@ -1281,12 +1425,72 @@ function drawGameTarget(
   y: number,
   radius: number,
   time: number,
+  image: HTMLImageElement | null,
+  hitAt: number,
 ) {
   ctx.save();
   ctx.translate(x, y);
 
   const pulse = 1 + Math.sin(time * 0.004) * 0.06;
 
+  // Hit reaction: a quick wobble and pop that fades out.
+  const sinceHit = time - hitAt;
+  const hitStrength =
+    sinceHit >= 0 && sinceHit < HIT_REACTION_MS
+      ? 1 - sinceHit / HIT_REACTION_MS
+      : 0;
+
+  if (hitStrength > 0) {
+    ctx.rotate(Math.sin(sinceHit * 0.05) * 0.35 * hitStrength);
+    const pop = 1 + 0.18 * hitStrength;
+    ctx.scale(pop, pop);
+  }
+
+  if (image && image.complete && image.naturalWidth > 0) {
+    // Soft red glow behind the badge.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.shadowColor = "rgba(248, 113, 113, 0.7)";
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = "#0F172A";
+    ctx.fill();
+    ctx.restore();
+
+    // Cartoon, cropped to a circle.
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
+
+    if (hitStrength > 0) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * hitStrength})`;
+      ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+    }
+
+    ctx.restore();
+
+    // Target ring around the badge, plus a pulsing outer ring.
+    ctx.strokeStyle = "rgba(248, 113, 113, 0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(248, 113, 113, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * pulse + 6, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+    return;
+  }
+
+  // Fallback while the image loads (or if it fails): the original rings.
   ctx.strokeStyle = "rgba(248, 113, 113, 0.85)";
   ctx.lineWidth = 3;
 
