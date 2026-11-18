@@ -17,10 +17,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Deepti Nanda | Full-Stack Developer",
-  description: "BCA undergraduate at Sarala Birla University (2024-2027). Aspiring Full-Stack Developer focused on modern web & AI applications.",
+  description:
+    "BCA undergraduate at Sarala Birla University (2024-2027). Aspiring Full-Stack Developer focused on modern web & AI applications.",
   openGraph: {
     title: "Deepti Nanda | Full-Stack Developer",
-    description: "BCA undergraduate at Sarala Birla University. Building technology that solves real-world problems.",
+    description:
+      "BCA undergraduate at Sarala Birla University. Building technology that solves real-world problems.",
     type: "website",
   },
 };
@@ -32,16 +34,19 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
-        <ThemeProvider
-          attribute="data-theme"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="data-theme" defaultTheme="light">
           <ResumeProvider>
             <Navbar />
             <main className="flex-1">{children}</main>
