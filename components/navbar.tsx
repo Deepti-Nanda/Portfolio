@@ -9,7 +9,6 @@ import {
   X,
   Sun,
   Moon,
-  Monitor,
   Download,
   FileText,
   ChevronDown,
@@ -24,7 +23,7 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const { openResume, downloadResume } = useResume();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -78,23 +77,10 @@ export function Navbar() {
   };
 
   const handleThemeToggle = () => {
-    const themes: Array<"light" | "dark" | "system"> = [
-      "light",
-      "dark",
-      "system",
-    ];
-
-    const currentIndex = themes.indexOf(theme);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
-
-    setTheme(nextTheme);
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   const getThemeIcon = () => {
-    if (theme === "system") {
-      return <Monitor className="w-5 h-5" />;
-    }
-
     return resolvedTheme === "dark" ? (
       <Sun className="w-5 h-5" />
     ) : (
@@ -103,8 +89,6 @@ export function Navbar() {
   };
 
   const getThemeLabel = () => {
-    if (theme === "system") return "System";
-
     return resolvedTheme === "dark" ? "Dark" : "Light";
   };
 
@@ -126,7 +110,6 @@ export function Navbar() {
         className="container flex items-center justify-between h-16 md:h-14 px-4"
         aria-label="Main navigation"
       >
-        {/* Logo */}
         <Link
           href="/"
           className="flex items-center gap-2 text-lg sm:text-xl font-bold tracking-tight text-[var(--foreground)] transition-colors hover:text-[var(--accent)] focus-visible:outline-offset-4"
@@ -136,7 +119,6 @@ export function Navbar() {
           <span>Deepti Nanda</span>
         </Link>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-5 lg:gap-8">
           {navLinks.map((link) => (
             <Link
@@ -148,7 +130,6 @@ export function Navbar() {
             </Link>
           ))}
 
-          {/* Resume Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               ref={resumeBtnRef}
@@ -192,7 +173,6 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Theme Toggle */}
           <button
             onClick={handleThemeToggle}
             className="btn-ghost p-2 rounded-xl min-w-11 min-h-11 flex items-center justify-center"
@@ -203,7 +183,6 @@ export function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           ref={mobileMenuBtnRef}
           onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -220,7 +199,6 @@ export function Navbar() {
         </button>
       </nav>
 
-      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div
           id="mobile-menu"
@@ -238,7 +216,6 @@ export function Navbar() {
               </Link>
             ))}
 
-            {/* Resume Actions */}
             <div className="pt-4 border-t border-[var(--card-border)] space-y-3">
               <button
                 onClick={handleResumeView}
@@ -257,18 +234,15 @@ export function Navbar() {
               </button>
             </div>
 
-            {/* Theme Toggle */}
             <button
               onClick={handleThemeToggle}
               className="w-full min-h-11 flex items-center justify-between px-4 py-3 text-[var(--foreground)] hover:text-[var(--accent)] transition-colors rounded-lg border border-[var(--card-border)] bg-[var(--background)]"
               aria-label={`Change theme (current: ${getThemeLabel()})`}
             >
               <span className="flex items-center gap-3">
-                <Monitor className="w-5 h-5" />
+                {getThemeIcon()}
                 Theme: {getThemeLabel()}
               </span>
-
-              {getThemeIcon()}
             </button>
           </div>
         </div>
