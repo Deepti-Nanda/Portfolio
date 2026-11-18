@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { SiX } from "@icons-pack/react-simple-icons";
 import {
   Mail,
   Send,
@@ -9,7 +10,6 @@ import {
   Loader2,
   Copy,
   CheckCheck,
-  Code,
 } from "lucide-react";
 import { GitHubIcon, LinkedInIcon } from "./brand-icons";
 
@@ -139,10 +139,10 @@ export function Contact() {
       label: "github.com/Deepti-Nanda",
     },
     {
-      name: "LeetCode",
-      href: "https://leetcode.com/u/Deepti_Nanda/",
-      icon: Code,
-      label: "leetcode.com/u/Deepti_Nanda/",
+      name: "X",
+      href: "https://x.com/DeeptiNanda",
+      icon: SiX,
+      label: "x.com/DeeptiNanda",
     },
   ];
 
@@ -158,7 +158,7 @@ export function Contact() {
             id="contact-heading"
             className="section-title text-[var(--foreground)]"
           >
-            Let's Talk
+            Let's Connect
           </h2>
 
           <p className="text-[var(--muted)] mt-3 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed">
@@ -247,7 +247,7 @@ export function Contact() {
               <div className="space-y-3 text-sm sm:text-base text-[var(--muted)]">
                 <div className="flex items-start gap-3">
                   <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-green-500 animate-pulse" />
-                  <span>Open to internships (part-time & full-time)</span>
+                  <span>Open to internships (part-time & ful-time) and job opportunities</span>
                 </div>
 
                 <div className="flex items-start gap-3">
