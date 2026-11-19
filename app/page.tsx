@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Hero } from "@/components/hero";
 import { About } from "@/components/about";
 import { Projects } from "@/components/projects";
@@ -8,12 +8,15 @@ import { Skills } from "@/components/skills";
 import { Experience } from "@/components/experience";
 import { Contact } from "@/components/contact";
 
-function CopyrightYear() {
-  const [year, setYear] = useState(2026);
+const subscribeToNothing = () => () => {};
 
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+function CopyrightYear() {
+  // Prerender with a fixed year, then show the visitor's current year.
+  const year = useSyncExternalStore(
+    subscribeToNothing,
+    () => new Date().getFullYear(),
+    () => 2026,
+  );
 
   return <>{year}</>;
 }

@@ -85,7 +85,7 @@ export function About() {
 
             <div className="mt-6 max-w-none text-[var(--foreground)]">
               <p className="mb-6 text-sm leading-[1.9] text-[var(--muted)] sm:mb-7 sm:text-base lg:text-lg">
-                I build technology that solves real-world problems. I'm a BCA
+                I build technology that solves real-world problems. I&apos;m a BCA
                 undergraduate at Sarala Birla University, focused on full-stack
                 development and AI-driven applications.
               </p>
@@ -98,7 +98,7 @@ export function About() {
               </p>
 
               <p className="text-sm leading-[1.9] text-[var(--muted)] sm:text-base lg:text-lg">
-                When I'm not coding, you'll find me solving algorithmic
+                When I&apos;m not coding, you&apos;ll find me solving algorithmic
                 challenges on LeetCode, exploring new frameworks, or sharing
                 knowledge with the developer community.
               </p>

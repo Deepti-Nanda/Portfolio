@@ -158,11 +158,11 @@ export function Contact() {
             id="contact-heading"
             className="section-title text-[var(--foreground)]"
           >
-            Let's Connect
+            Let&apos;s Connect
           </h2>
 
           <p className="text-[var(--muted)] mt-3 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed">
-            Have a project in mind or just want to say hi? I'd love to hear from
+            Have a project in mind or just want to say hi? I&apos;d love to hear from
             you.
           </p>
         </div>

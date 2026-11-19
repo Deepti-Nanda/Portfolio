@@ -4,7 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -18,6 +18,30 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const STORAGE_KEY = "theme";
+const listeners = new Set<() => void>();
+
+// The saved theme lives in localStorage; also follow changes from other tabs.
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  window.addEventListener("storage", listener);
+
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function getStoredTheme(): Theme | null {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === "light" || stored === "dark" ? stored : null;
+}
+
+function storeTheme(theme: Theme) {
+  localStorage.setItem(STORAGE_KEY, theme);
+  listeners.forEach((listener) => listener());
+}
+
 export function ThemeProvider({
   children,
   attribute = "data-theme",
@@ -29,26 +53,17 @@ export function ThemeProvider({
   defaultTheme?: Theme;
   disableTransitionOnChange?: boolean;
 }) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [mounted, setMounted] = useState(false);
+  // The server (and hydration) render the default; the saved theme follows.
+  const theme = useSyncExternalStore(
+    subscribe,
+    () => getStoredTheme() ?? defaultTheme,
+    () => defaultTheme,
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-    }
-
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
     const root = document.documentElement;
 
     root.setAttribute(attribute, theme);
-    localStorage.setItem("theme", theme);
 
     if (disableTransitionOnChange) {
       root.style.setProperty("--transition", "none");
@@ -57,22 +72,16 @@ export function ThemeProvider({
         root.style.removeProperty("--transition");
       });
     }
-  }, [theme, attribute, disableTransitionOnChange, mounted]);
+  }, [theme, attribute, disableTransitionOnChange]);
 
   const contextValue: ThemeContextType = {
     theme,
     resolvedTheme: theme,
-    setTheme,
-  };
-
-  const defaultContext: ThemeContextType = {
-    theme: defaultTheme,
-    resolvedTheme: defaultTheme,
-    setTheme: () => {},
+    setTheme: storeTheme,
   };
 
   return (
-    <ThemeContext.Provider value={mounted ? contextValue : defaultContext}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

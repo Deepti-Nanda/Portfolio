@@ -47,11 +47,6 @@ export function Experience() {
   useEffect(() => {
     const elements = document.querySelectorAll("[data-experience-item]");
 
-    if (!("IntersectionObserver" in window)) {
-      setVisibleItems(new Set(experiences.map((exp) => exp.id)));
-      return;
-    }
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
