@@ -292,7 +292,7 @@ const MAX_DRAG = 85;
 const MIN_DRAG = 10;
 const MAX_POWER = 17;
 const GRAB_RADIUS = 70;
-const HIT_PADDING = 6;
+const HIT_PADDING = 3;
 const HITS_TO_WIN = 2;
 
 type Point = { x: number; y: number };
@@ -303,7 +303,7 @@ function getSlingPosition(width: number, height: number): Point {
 
 /** Big enough for her face to read clearly, while staying a fair target. */
 function getTargetRadius(width: number, height: number) {
-  return Math.max(28, Math.min(46, Math.min(width, height) * 0.12));
+  return Math.max(26, Math.min(42, Math.min(width, height) * 0.105));
 }
 
 /** The cartoon portrait in the middle of the orbit. */
@@ -782,9 +782,9 @@ export function Skills() {
       target.baseY = height * TARGET_Y_RATIO;
 
       if (!state.isPaused && !state.result) {
-        target.phase += dt * 0.002;
-        target.x = target.baseX + Math.cos(target.phase) * 18;
-        target.y = target.baseY + Math.sin(target.phase) * 24;
+        target.phase += dt * 0.0028;
+        target.x = target.baseX + Math.cos(target.phase) * 26;
+        target.y = target.baseY + Math.sin(target.phase) * 34;
 
         for (const projectile of assets.projectiles) {
           projectile.vy += GRAVITY * step;
