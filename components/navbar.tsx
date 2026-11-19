@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
 import { useTheme } from "@/components/theme-provider";
+import { shatterThemeSwitch } from "@/components/theme-shatter";
 import { useResume } from "@/components/resume-context";
 import {
   Menu,
@@ -76,8 +78,18 @@ export function Navbar() {
     setResumeDropdownOpen(false);
   };
 
-  const handleThemeToggle = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  const handleThemeToggle = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const next = resolvedTheme === "dark" ? "light" : "dark";
+
+    // Shatter from where the button was clicked; keyboard presses have no
+    // pointer position, so use the button's centre.
+    const rect = event.currentTarget.getBoundingClientRect();
+    const origin: [number, number] =
+      event.detail > 0
+        ? [event.clientX, event.clientY]
+        : [rect.left + rect.width / 2, rect.top + rect.height / 2];
+
+    void shatterThemeSwitch(origin, () => setTheme(next));
   };
 
   const getThemeIcon = () => {
