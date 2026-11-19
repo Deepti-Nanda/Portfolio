@@ -46,7 +46,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
-        <ThemeProvider attribute="data-theme" defaultTheme="light">
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="light"
+          disableTransitionOnChange
+        >
           <ResumeProvider>
             <Navbar />
             <main className="flex-1">{children}</main>
