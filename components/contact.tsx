@@ -247,7 +247,7 @@ export function Contact() {
               <div className="space-y-3 text-sm sm:text-base text-[var(--muted)]">
                 <div className="flex items-start gap-3">
                   <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 mt-1.5 shrink-0 rounded-full bg-green-500 animate-pulse" />
-                  <span>Open to internships (part-time & ful-time) and job opportunities</span>
+                  <span>Open to internships and job opportunities</span>
                 </div>
 
                 <div className="flex items-start gap-3">
