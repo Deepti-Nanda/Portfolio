@@ -11,9 +11,9 @@
   --accent-foreground: #FFFFFF;
 
   --ambient-gradient:
-    radial-gradient(ellipse at 15% 20%, rgba(63, 112, 60, 0.15), transparent 48%),
-    radial-gradient(ellipse at 85% 30%, rgba(125, 159, 81, 0.13), transparent 48%),
-    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.12), transparent 50%),
+    radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(200, 225, 150, 0.5), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(150, 195, 90, 0.24), transparent 50%),
     linear-gradient(135deg, #E7E9DF, #DCE2D5, #E7E9DF);
 }
 
@@ -41,9 +41,9 @@
   --accent-foreground: #FFFFFF;
 
   --ambient-gradient:
-    radial-gradient(ellipse at 15% 20%, rgba(63, 112, 60, 0.15), transparent 48%),
-    radial-gradient(ellipse at 85% 30%, rgba(125, 159, 81, 0.13), transparent 48%),
-    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.12), transparent 50%),
+    radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(200, 225, 150, 0.5), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(150, 195, 90, 0.24), transparent 50%),
     linear-gradient(135deg, #E7E9DF, #DCE2D5, #E7E9DF);
 }
 
@@ -58,9 +58,9 @@
   --accent-foreground: #0a130e;
 
   --ambient-gradient:
-    radial-gradient(ellipse at 15% 20%, rgba(125, 159, 81, 0.18), transparent 48%),
-    radial-gradient(ellipse at 85% 30%, rgba(63, 92, 25, 0.18), transparent 48%),
-    radial-gradient(ellipse at 50% 85%, rgba(70, 105, 75, 0.16), transparent 50%),
+    radial-gradient(ellipse at 15% 20%, rgba(125, 170, 70, 0.2), transparent 48%),
+    radial-gradient(ellipse at 85% 30%, rgba(18, 72, 58, 0.5), transparent 48%),
+    radial-gradient(ellipse at 50% 85%, rgba(70, 150, 100, 0.18), transparent 50%),
     linear-gradient(135deg, #243329, #1D2B22, #243329);
 }
 
