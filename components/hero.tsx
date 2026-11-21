@@ -1,11 +1,52 @@
 "use client";
 
+import type { PointerEvent } from "react";
+import { useWaterRipple } from "@/components/water-ripple";
+
+/**
+ * Whether a point is on the words of a heading or paragraph. Their boxes are
+ * much wider than the text, and taps beside the words should still ripple.
+ */
+function isOnText(target: Element, x: number, y: number) {
+  const block = target.closest("h1, p");
+  if (!block) return false;
+
+  const range = document.createRange();
+  range.selectNodeContents(block);
+
+  return Array.from(range.getClientRects()).some(
+    (rect) =>
+      x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom,
+  );
+}
+
 export function Hero() {
+  const { canvasRef, drop } = useWaterRipple();
+
+  // Ripple only where the background is visible, not on text or links.
+  const handlePointerDown = (event: PointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+
+    const target = event.target as Element;
+    if (target.closest("a, button")) return;
+    if (isOnText(target, event.clientX, event.clientY)) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    drop(event.clientX - rect.left, event.clientY - rect.top);
+  };
+
   return (
     <section
       id="home"
       className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-4 pt-20 pb-20 sm:px-6 md:pt-16"
+      onPointerDown={handlePointerDown}
     >
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+      />
+
       <div className="container relative z-10 mx-auto w-full max-w-5xl px-2 text-center">
         <h1 className="animate-fade-in-up text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl md:text-6xl lg:text-7xl">
           Deepti <span className="text-[var(--accent)]">Nanda</span>
