@@ -1,7 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { ArrowUpRight, ExternalLink } from "lucide-react";
 import { GitHubIcon } from "./brand-icons";
+import { PinchIcon } from "./pinch-icon";
+import { RadarIcon, RakshaIcon } from "./project-icons";
+
+type ProjectIcon = "radar" | "raksha" | "pinch";
 
 interface Project {
   title: string;
@@ -9,8 +14,26 @@ interface Project {
   techStack: string[];
   githubUrl: string;
   liveUrl?: string;
+  // Text for the live link button; defaults to "Live".
+  liveLabel?: string;
   thumbnail?: string;
+  // Animated icon that fills the thumbnail area.
+  icon?: ProjectIcon;
 }
+
+const projectIcons: Record<ProjectIcon, ReactNode> = {
+  radar: (
+    <div className="h-full w-full bg-white">
+      <RadarIcon />
+    </div>
+  ),
+  raksha: (
+    <div className="h-full w-full bg-[#2189EE]">
+      <RakshaIcon />
+    </div>
+  ),
+  pinch: <PinchIcon />,
+};
 
 const projects: Project[] = [
   {
@@ -21,6 +44,7 @@ const projects: Project[] = [
     githubUrl: "https://github.com/opensource-radar/opensource-radar",
     liveUrl: "https://opensource-radar.com/",
     thumbnail: "",
+    icon: "radar",
   },
   {
     title: "Raksha",
@@ -35,7 +59,10 @@ const projects: Project[] = [
     ],
     githubUrl: "https://github.com/Deepti-Nanda/raksha",
     liveUrl: "https://claude.ai/artifact/HPoan1Xh1iyQxEW3r33v3S",
+    // It's a mobile app, so the link shows a 3D model rather than a live site.
+    liveLabel: "3D Model",
     thumbnail: "",
+    icon: "raksha",
   },
   {
     title: "A Pinch of Memories",
@@ -45,6 +72,7 @@ const projects: Project[] = [
     githubUrl: "https://github.com/Deepti-Nanda/APinchOfMemories",
     liveUrl: "https://deepti-nanda.github.io/APinchOfMemories",
     thumbnail: "",
+    icon: "pinch",
   },
 ];
 
@@ -88,7 +116,11 @@ export function Projects() {
             >
               {/* Thumbnail */}
               <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-[var(--accent)]/20 to-[var(--card-border)]">
-                {project.thumbnail ? (
+                {project.icon ? (
+                  <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
+                    {projectIcons[project.icon]}
+                  </div>
+                ) : project.thumbnail ? (
                   <img
                     src={project.thumbnail}
                     alt={`${project.title} preview`}
@@ -149,13 +181,17 @@ export function Projects() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-primary flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 text-xs sm:gap-2 sm:text-sm"
-                      aria-label={`View ${project.title} live`}
+                      aria-label={
+                        project.liveLabel
+                          ? `View ${project.title} ${project.liveLabel}`
+                          : `View ${project.title} live`
+                      }
                     >
                       <ExternalLink
                         className="h-4 w-4 shrink-0"
                         aria-hidden="true"
                       />
-                      Live
+                      {project.liveLabel ?? "Live"}
                     </a>
                   ) : (
                     <button
