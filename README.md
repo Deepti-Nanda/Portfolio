@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Deepti Nanda — Portfolio
 
-## Getting Started
+My personal portfolio: a single-page site that introduces who I am, the projects I've built, my skills and experience, with a few playful interactions along the way.
 
-First, run the development server:
+**Building technology that solves real-world problems.**
+
+## Highlights
+
+- **Water ripple hero** — tap or click the empty hero background and a soft 3D ripple spreads across the drifting gradient, like a stone dropped in water.
+- **Shattering theme switch** — toggling light/dark mode cracks the page into glass shards that fall away to reveal the new theme.
+- **Skills orbit** — skill logos orbit my portrait on two rings. Select a skill to see which projects use it.
+- **Slingshot mini-game** — select the portrait in the orbit to play: three shots, two hits wins a treasure chest that opens my resume.
+- **Animated project icons** — a sweeping radar, a beating ECG line and a hand sprinkling spice bring each project card to life.
+- **Resume viewer** — view the PDF in a modal or download it from the navbar.
+- **Working contact form** — messages are delivered by email through [Resend](https://resend.com), with server-side validation and basic bot protection.
+- **Light and dark themes**, responsive from small phones to large desktops.
+
+## Tech stack
+
+- [Next.js 16](https://nextjs.org) (App Router, Turbopack)
+- [React 19](https://react.dev) and TypeScript
+- [Tailwind CSS 4](https://tailwindcss.com)
+- [Resend](https://resend.com) for the contact form
+- [Lucide](https://lucide.dev) and [Simple Icons](https://simpleicons.org) for icons
+- Canvas and SVG animations for the interactive effects
+
+## Getting started
+
+Requires **Node.js 20.9 or newer**.
 
 ```bash
+git clone https://github.com/Deepti-Nanda/Portfolio.git
+cd Portfolio
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Contact form settings
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The contact form needs a [Resend](https://resend.com) account. Create a `.env.local` file in the project root:
 
-## Learn More
+```bash
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_TO_EMAIL=you@example.com
+```
 
-To learn more about Next.js, take a look at the following resources:
+- `RESEND_FROM_EMAIL` is the sender address. Resend's test sender `onboarding@resend.dev` only delivers to the email you signed up to Resend with; verify your own domain in Resend to send from your own address.
+- `RESEND_TO_EMAIL` is where messages are delivered.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`.env.local` is ignored by git — never commit your API key. The rest of the site works without these settings; only the form shows a "not configured" message.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | Check the code with ESLint |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  layout.tsx            Fonts, metadata, theme and resume providers
+  page.tsx              The single page: all sections and the footer
+  globals.css           Theme colours, background effect and shared styles
+  api/contact/route.ts  Sends contact form messages through Resend
+components/
+  hero.tsx              Hero section with the water ripple
+  about.tsx             About section and intro video
+  projects.tsx          Project cards (edit your projects here)
+  skills.tsx            Skills orbit and slingshot game
+  experience.tsx        Experience timeline
+  contact.tsx           Contact details and form
+  navbar.tsx            Navigation, resume menu and theme toggle
+  ...                   Theme, ripple, shatter and icon helpers
+public/
+  resume.pdf            The resume shown in the viewer
+  game/                 Portrait images used by the orbit and game
+  projects/             Project images
+```
+
+## Updating content
+
+- **Projects** — edit the `projects` list in `components/projects.tsx`.
+- **Experience** — edit the `experiences` list in `components/experience.tsx`.
+- **Skills** — edit `SKILLS` in `components/skills.tsx`.
+- **Resume** — replace `public/resume.pdf`.
+- **Intro video** — add `public/intro-video.mp4` (and optionally `public/video-poster.jpg`). Until then, the About section shows a "Coming Soon" thumbnail.
+- **Theme colours** — edit the colour variables at the top of `app/globals.css`.
+
+## Deployment
+
+The site deploys like any Next.js app, for example on [Vercel](https://vercel.com):
+
+1. Import the repository.
+2. Add `RESEND_API_KEY`, `RESEND_FROM_EMAIL` and `RESEND_TO_EMAIL` under **Settings → Environment Variables**.
+3. Deploy, then send a test message through the contact form.
+
+## Contact
+
+- GitHub — [Deepti-Nanda](https://github.com/Deepti-Nanda)
+- LinkedIn — [deepti-nanda](https://linkedin.com/in/deepti-nanda-271b352a3)
