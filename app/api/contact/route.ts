@@ -3,6 +3,58 @@ import { Resend } from "resend";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// A real message is a few KB at most; reject anything far larger unread.
+const MAX_BODY_BYTES = 16 * 1024;
+
+// Rate limits, so scripted spam can't flood the inbox or use up the email
+// quota. They're kept in memory, so each server instance counts separately.
+const PER_VISITOR_LIMIT = 5;
+const PER_VISITOR_WINDOW_MS = 15 * 60 * 1000;
+const OVERALL_LIMIT = 40;
+const OVERALL_WINDOW_MS = 60 * 60 * 1000;
+const MAX_TRACKED_VISITORS = 5000;
+
+const visitorRequests = new Map<string, number[]>();
+let overallRequests: number[] = [];
+
+function getClientIp(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for");
+  return (
+    forwarded?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+/** Records a request and returns how many seconds to wait if over a limit. */
+function checkRateLimit(ip: string, now: number) {
+  overallRequests = overallRequests.filter(
+    (time) => now - time < OVERALL_WINDOW_MS,
+  );
+  const recent = (visitorRequests.get(ip) ?? []).filter(
+    (time) => now - time < PER_VISITOR_WINDOW_MS,
+  );
+
+  if (recent.length >= PER_VISITOR_LIMIT) {
+    return Math.ceil((recent[0] + PER_VISITOR_WINDOW_MS - now) / 1000);
+  }
+
+  if (overallRequests.length >= OVERALL_LIMIT) {
+    return Math.ceil((overallRequests[0] + OVERALL_WINDOW_MS - now) / 1000);
+  }
+
+  // Keep memory bounded: forget the oldest visitors first.
+  if (!visitorRequests.has(ip) && visitorRequests.size >= MAX_TRACKED_VISITORS) {
+    const oldest = visitorRequests.keys().next().value;
+    if (oldest !== undefined) visitorRequests.delete(oldest);
+  }
+
+  recent.push(now);
+  visitorRequests.set(ip, recent);
+  overallRequests.push(now);
+  return 0;
+}
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
@@ -19,10 +71,40 @@ function escapeHtml(value: string) {
 
 export async function POST(request: Request) {
   try {
+    const retryAfter = checkRateLimit(getClientIp(request), Date.now());
+
+    if (retryAfter > 0) {
+      return Response.json(
+        {
+          message:
+            "Too many messages in a short time. Please try again in a few minutes.",
+        },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } },
+      );
+    }
+
+    const declaredLength = Number(request.headers.get("content-length"));
+
+    if (declaredLength > MAX_BODY_BYTES) {
+      return Response.json(
+        { message: "Your message is too large." },
+        { status: 413 },
+      );
+    }
+
     let body: Record<string, unknown>;
 
     try {
-      body = await request.json();
+      const raw = await request.text();
+
+      if (raw.length > MAX_BODY_BYTES) {
+        return Response.json(
+          { message: "Your message is too large." },
+          { status: 413 },
+        );
+      }
+
+      body = JSON.parse(raw);
     } catch {
       return Response.json(
         { message: "Invalid request format." },
@@ -117,7 +199,7 @@ export async function POST(request: Request) {
     const safeSubject = escapeHtml(subject);
     const safeMessage = escapeHtml(message);
 
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from,
       to: [to],
       replyTo: email,
@@ -157,7 +239,6 @@ export async function POST(request: Request) {
 
     return Response.json({
       message: "Your message was accepted for delivery.",
-      id: data?.id,
     });
   } catch (error) {
     console.error("Contact API error:", error);
