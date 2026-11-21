@@ -178,13 +178,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Read secrets only on the server.
-    const apiKey = process.env.RESEND_API_KEY;
-    const from = process.env.RESEND_FROM_EMAIL;
-    const to = process.env.RESEND_TO_EMAIL;
+    // Read secrets only on the server. Stray spaces from pasting are ignored.
+    const apiKey = process.env.RESEND_API_KEY?.trim();
+    const from = process.env.RESEND_FROM_EMAIL?.trim();
+    const to = process.env.RESEND_TO_EMAIL?.trim();
 
     if (!apiKey || !from || !to) {
-      console.error("Contact form email configuration is incomplete.");
+      // Name the missing settings (never their values) to make setup easy.
+      const missing = [
+        ["RESEND_API_KEY", apiKey],
+        ["RESEND_FROM_EMAIL", from],
+        ["RESEND_TO_EMAIL", to],
+      ]
+        .filter(([, value]) => !value)
+        .map(([name]) => name);
+
+      console.error(
+        `Contact form email configuration is incomplete. Missing: ${missing.join(", ")}`,
+      );
 
       return Response.json(
         { message: "The contact service is not configured yet." },
