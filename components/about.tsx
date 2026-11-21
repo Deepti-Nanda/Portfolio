@@ -1,11 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Clapperboard } from "lucide-react";
 
 export function About() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoWrapperRef = useRef<HTMLDivElement>(null);
 
+  // Until the video loads, a "Coming Soon" thumbnail replaces the player.
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -145,148 +148,171 @@ export function About() {
                 onTimeUpdate={(e) =>
                   setCurrentTime(e.currentTarget.currentTime)
                 }
-                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration);
+                  setIsVideoReady(true);
+                }}
                 aria-label="Introductory video about Deepti Nanda"
               >
                 <source src="/intro-video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
 
-              {/* Play/Pause Overlay */}
-              <button
-                onClick={togglePlay}
-                className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                  !isPlaying || showControls
-                    ? "opacity-100"
-                    : "opacity-0 pointer-events-none"
-                }`}
-                aria-label={isPlaying ? "Pause video" : "Play video"}
-              >
-                <span className="flex h-16 w-16 items-center justify-center rounded-full glass border border-[var(--card-border)] shadow-xl backdrop-blur-md sm:h-20 sm:w-20">
-                  {isPlaying ? (
-                    <svg
-                      className="h-7 w-7 text-white sm:h-8 sm:w-8"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+              {!isVideoReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-[color:var(--card-bg)] bg-gradient-to-br from-[var(--accent)]/20 to-[var(--card-border)]">
+                  <div className="text-center">
+                    <Clapperboard
+                      className="mx-auto mb-3 h-10 w-10 text-[var(--muted)] sm:mb-4 sm:h-12 sm:w-12"
                       aria-hidden="true"
-                    >
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="h-7 w-7 text-white sm:h-8 sm:w-8"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </span>
-              </button>
+                    />
+                    <p className="text-sm font-medium text-[var(--foreground)] sm:text-base">
+                      Coming Soon...
+                    </p>
+                  </div>
+                </div>
+              )}
 
-              {/* Video Controls */}
-              <div
-                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 transition-opacity sm:p-4 ${
-                  showControls || isPlaying
-                    ? "opacity-100"
-                    : "opacity-0 pointer-events-none"
-                }`}
-              >
-                <div className="flex items-center gap-2 text-white sm:gap-4">
-                  {/* Play/Pause */}
+              {isVideoReady && (
+                <>
+                  {/* Play/Pause Overlay */}
                   <button
                     onClick={togglePlay}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
-                    aria-label={isPlaying ? "Pause" : "Play"}
+                    className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                      !isPlaying || showControls
+                        ? "opacity-100"
+                        : "opacity-0 pointer-events-none"
+                    }`}
+                    aria-label={isPlaying ? "Pause video" : "Play video"}
                   >
-                    {isPlaying ? (
-                      <svg
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    )}
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full glass border border-[var(--card-border)] shadow-xl backdrop-blur-md sm:h-20 sm:w-20">
+                      {isPlaying ? (
+                        <svg
+                          className="h-7 w-7 text-white sm:h-8 sm:w-8"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-7 w-7 text-white sm:h-8 sm:w-8"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
 
-                  {/* Progress */}
-                  <input
-                    type="range"
-                    min={0}
-                    max={duration || 1}
-                    step="0.1"
-                    value={Math.min(currentTime, duration || 1)}
-                    onChange={(e) => handleSeek(Number(e.target.value))}
-                    className="min-w-0 flex-1 cursor-pointer accent-white"
-                    aria-label="Video progress"
-                  />
-
-                  {/* Time */}
-                  <span className="shrink-0 text-[10px] font-mono tabular-nums sm:text-xs">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-
-                  {/* Mute */}
-                  <button
-                    onClick={handleMute}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
-                    aria-label={isMuted ? "Unmute" : "Mute"}
+                  {/* Video Controls */}
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3 transition-opacity sm:p-4 ${
+                      showControls || isPlaying
+                        ? "opacity-100"
+                        : "opacity-0 pointer-events-none"
+                    }`}
                   >
-                    {isMuted ? (
-                      <svg
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
+                    <div className="flex items-center gap-2 text-white sm:gap-4">
+                      {/* Play/Pause */}
+                      <button
+                        onClick={togglePlay}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
+                        aria-label={isPlaying ? "Pause" : "Play"}
                       >
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.59 3L19 9.59 17.59 8.17 15.17 10.6l-2.42-2.43-1.42 1.42L13.76 12l-2.43 2.41 1.42 1.42 2.42-2.42 2.42 2.42 1.42-1.42L16.59 12z" />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="h-5 w-5"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
-                      </svg>
-                    )}
-                  </button>
+                        {isPlaying ? (
+                          <svg
+                            className="h-5 w-5"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-5 w-5"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </button>
 
-                  {/* Fullscreen */}
-                  <button
-                    onClick={handleFullscreen}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
-                    aria-label="Toggle fullscreen"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+                      {/* Progress */}
+                      <input
+                        type="range"
+                        min={0}
+                        max={duration || 1}
+                        step="0.1"
+                        value={Math.min(currentTime, duration || 1)}
+                        onChange={(e) => handleSeek(Number(e.target.value))}
+                        className="min-w-0 flex-1 cursor-pointer accent-white"
+                        aria-label="Video progress"
+                      />
+
+                      {/* Time */}
+                      <span className="shrink-0 text-[10px] font-mono tabular-nums sm:text-xs">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
+
+                      {/* Mute */}
+                      <button
+                        onClick={handleMute}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
+                        aria-label={isMuted ? "Unmute" : "Mute"}
+                      >
+                        {isMuted ? (
+                          <svg
+                            className="h-5 w-5"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.59 3L19 9.59 17.59 8.17 15.17 10.6l-2.42-2.43-1.42 1.42L13.76 12l-2.43 2.41 1.42 1.42 2.42-2.42 2.42 2.42 1.42-1.42L16.59 12z" />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-5 w-5"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                          </svg>
+                        )}
+                      </button>
+
+                      {/* Fullscreen */}
+                      <button
+                        onClick={handleFullscreen}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 transition-colors hover:bg-white/30"
+                        aria-label="Toggle fullscreen"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
-            <p className="mt-3 text-center text-xs text-[var(--muted)] sm:mt-4 sm:text-sm">
-              Click to play / pause
-            </p>
+            {isVideoReady && (
+              <p className="mt-3 text-center text-xs text-[var(--muted)] sm:mt-4 sm:text-sm">
+                Click to play / pause
+              </p>
+            )}
           </div>
         </div>
       </div>
