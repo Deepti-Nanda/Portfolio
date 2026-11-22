@@ -58,15 +58,17 @@ function RanchiTime() {
 export function Footer() {
   return (
     <footer className="mt-8">
-      {/* A wave edge, echoing the water ripple in the hero. */}
+      {/* A slowly drifting wave edge, echoing the water ripple in the hero.
+          It's one wavelength wider than the view, so the loop is seamless. */}
       <svg
         viewBox="0 0 600 24"
         preserveAspectRatio="none"
-        className="block h-5 w-full"
+        className="block h-5 w-full overflow-hidden"
         aria-hidden="true"
       >
         <path
-          d="M0 12 Q25 0 50 12 T100 12 T150 12 T200 12 T250 12 T300 12 T350 12 T400 12 T450 12 T500 12 T550 12 T600 12 V24 H0Z"
+          className="footer-wave"
+          d="M0 12 Q25 0 50 12 T100 12 T150 12 T200 12 T250 12 T300 12 T350 12 T400 12 T450 12 T500 12 T550 12 T600 12 T650 12 T700 12 V24 H0Z"
           fill="var(--footer-bg)"
         />
       </svg>
@@ -79,13 +81,13 @@ export function Footer() {
               <p className="font-semibold text-[var(--foreground)]">
                 Deepti Nanda
               </p>
-              <p className="text-sm text-[var(--muted)]">
+              <p className="text-sm text-[var(--footer-muted)]">
                 Full-Stack Developer
               </p>
             </div>
           </div>
 
-          <div className="space-y-1.5 text-sm text-[var(--muted)]">
+          <div className="space-y-1.5 text-sm text-[var(--footer-muted)]">
             <p className="flex items-center gap-2">
               <Clock
                 className="h-4 w-4 shrink-0 text-[var(--accent)]"
@@ -112,7 +114,7 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={label}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--footer-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
               >
                 <Icon className="h-5 w-5" />
               </a>
@@ -128,12 +130,12 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-[var(--card-border)]">
-          <div className="container flex flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-[var(--muted)] sm:flex-row sm:px-6">
+        <div className="border-t border-[var(--footer-border)]">
+          <div className="container flex flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-[var(--footer-muted)] sm:flex-row sm:px-6">
             <p>
               © <CopyrightYear /> Deepti Nanda
             </p>
-            <p>Psst… tap the hero for a surprise 🌊</p>
+            <p>Psst… tap the hero for a surprise</p>
           </div>
         </div>
       </div>
