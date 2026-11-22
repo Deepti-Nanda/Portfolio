@@ -59,11 +59,13 @@ export function Footer() {
   return (
     <footer className="mt-8">
       {/* A slowly drifting wave edge, echoing the water ripple in the hero.
-          It's one wavelength wider than the view, so the loop is seamless. */}
+          It's one wavelength wider than the view, so the loop is seamless.
+          The footer below overlaps it by a pixel so no seam shows between
+          them on scaled displays. */}
       <svg
         viewBox="0 0 600 24"
         preserveAspectRatio="none"
-        className="block h-5 w-full overflow-hidden"
+        className="-mb-px block h-5 w-full overflow-hidden"
         aria-hidden="true"
       >
         <path
@@ -73,7 +75,7 @@ export function Footer() {
         />
       </svg>
 
-      <div className="bg-[var(--footer-bg)]">
+      <div className="relative bg-[var(--footer-bg)]">
         <div className="container grid gap-6 px-4 py-8 sm:px-6 md:grid-cols-3 md:items-center">
           <div className="flex items-center gap-3">
             <Logo className="h-10 w-10 shrink-0" />
