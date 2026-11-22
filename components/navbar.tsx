@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { useTheme } from "@/components/theme-provider";
 import { shatterThemeSwitch } from "@/components/theme-shatter";
 import { useResume } from "@/components/resume-context";
@@ -128,6 +129,7 @@ export function Navbar() {
           aria-label="Deepti Nanda - Home"
           onClick={handleLinkClick}
         >
+          <Logo className="h-7 w-7 shrink-0" />
           <span>Deepti Nanda</span>
         </Link>
 
