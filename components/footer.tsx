@@ -7,7 +7,7 @@ import { GitHubIcon, LinkedInIcon } from "./brand-icons";
 import { Logo } from "./logo";
 
 // What you're working on right now, shown in the footer.
-const CURRENTLY = "";
+const CURRENTLY = 'git commit -m "surviving end-sems"';
 
 const socialLinks: {
   label: string;
