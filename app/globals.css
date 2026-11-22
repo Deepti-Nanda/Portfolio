@@ -10,7 +10,9 @@
   --accent-hover: #24a344;
   --accent-foreground: #FFFFFF;
   --logo-accent: #2d703c;
-  --footer-bg: #d4dccb;
+  --footer-bg: #C2CEB5;
+  --footer-muted: #46564A;
+  --footer-border: #A3B39B;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -42,7 +44,9 @@
   --accent-hover: #24a344;
   --accent-foreground: #FFFFFF;
   --logo-accent: #2d703c;
-  --footer-bg: #d4dccb;
+  --footer-bg: #C2CEB5;
+  --footer-muted: #46564A;
+  --footer-border: #A3B39B;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -62,6 +66,8 @@
   --accent-foreground: #0a130e;
   --logo-accent: #9CC562;
   --footer-bg: #31453a;
+  --footer-muted: #AAB7A7;
+  --footer-border: #374c3a;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(125, 170, 70, 0.2), transparent 48%),
@@ -232,6 +238,17 @@ video {
 
   100% {
     stroke-dashoffset: -1;
+  }
+}
+
+/* Footer: the wave edge drifts one wavelength (100 units) per loop. */
+.footer-wave {
+  animation: footer-wave 8s linear infinite;
+}
+
+@keyframes footer-wave {
+  to {
+    transform: translateX(-100px);
   }
 }
 
