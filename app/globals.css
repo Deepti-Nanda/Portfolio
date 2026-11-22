@@ -10,6 +10,7 @@
   --accent-hover: #24a344;
   --accent-foreground: #FFFFFF;
   --logo-accent: #2d703c;
+  --footer-bg: #d4dccb;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -41,6 +42,7 @@
   --accent-hover: #24a344;
   --accent-foreground: #FFFFFF;
   --logo-accent: #2d703c;
+  --footer-bg: #d4dccb;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -59,6 +61,7 @@
   --accent-hover: #3f5c19;
   --accent-foreground: #0a130e;
   --logo-accent: #9CC562;
+  --footer-bg: #31453a;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(125, 170, 70, 0.2), transparent 48%),
