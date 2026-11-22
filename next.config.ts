@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Don't advertise the framework in an "X-Powered-By" header.
   poweredByHeader: false,
+  images: {
+    // 75 is the default; the hero photo uses 90 so faces stay crisp.
+    qualities: [75, 90],
+  },
   headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
