@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ResumeProvider } from "@/components/resume-context";
 import { Navbar } from "@/components/navbar";
+import { FaviconAnimation } from "@/components/favicon-animation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+        <FaviconAnimation />
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="light"
