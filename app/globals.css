@@ -211,6 +211,27 @@ video {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+/* Logo: the N draws itself, holds, then clears from its start. */
+.logo-draw {
+  stroke-dasharray: 1 1;
+  animation: logo-draw 2.8s ease-in-out infinite;
+}
+
+@keyframes logo-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+
+  45%,
+  70% {
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
 /* Staggered reveal */
 .reveal {
   opacity: 0;
