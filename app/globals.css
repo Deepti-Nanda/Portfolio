@@ -13,6 +13,10 @@
   --footer-bg: #C2CEB5;
   --footer-muted: #46564A;
   --footer-border: #A3B39B;
+  --term-bg: #DCE2D5;
+  --term-border: #A3B39B;
+  --term-fg: #2d703c;
+  --term-prompt: #59695B;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -47,6 +51,10 @@
   --footer-bg: #C2CEB5;
   --footer-muted: #46564A;
   --footer-border: #A3B39B;
+  --term-bg: #DCE2D5;
+  --term-border: #A3B39B;
+  --term-fg: #2d703c;
+  --term-prompt: #59695B;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(110, 170, 70, 0.26), transparent 48%),
@@ -68,6 +76,10 @@
   --footer-bg: #31453a;
   --footer-muted: #AAB7A7;
   --footer-border: #374c3a;
+  --term-bg: #14201a;
+  --term-border: #374c3a;
+  --term-fg: #B5F23D;
+  --term-prompt: #7d9f51;
 
   --ambient-gradient:
     radial-gradient(ellipse at 15% 20%, rgba(125, 170, 70, 0.2), transparent 48%),
@@ -249,6 +261,17 @@ video {
 @keyframes footer-wave {
   to {
     transform: translateX(-100px);
+  }
+}
+
+/* Hero terminal greeting: a blinking block cursor. */
+.terminal-cursor {
+  animation: terminal-blink 1s steps(1) infinite;
+}
+
+@keyframes terminal-blink {
+  50% {
+    opacity: 0;
   }
 }
 
